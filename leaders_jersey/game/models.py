@@ -31,9 +31,13 @@ class Rider(models.Model):
     team = models.CharField(max_length=100)
     nationality = models.CharField(max_length=100)
     external_id = models.CharField(max_length=100, unique=True)
+    start_number = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ['start_number']
 
     def __str__(self):
-        return f"{self.rider_name} ({self.team})"
+        return f"{self.start_number}: {self.rider_name} ({self.team})"
 
 
 class StageResult(models.Model):
