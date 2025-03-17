@@ -5,7 +5,7 @@ from ..transform.transform_startlist import transform_startlist
 
 
 race = "tour-de-france"
-year = 2024
+year = 2025
 
 raw_startlist = extract_startlist(race, year)
 
