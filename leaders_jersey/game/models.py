@@ -45,6 +45,7 @@ class StageResult(models.Model):
     rider = models.ForeignKey(Rider, on_delete=models.CASCADE, related_name='stage_results')
     finishing_time = models.DurationField()
     ranking = models.PositiveSmallIntegerField()
+    bonus = models.DurationField()
 
 
 class PlayerSelection(models.Model):
