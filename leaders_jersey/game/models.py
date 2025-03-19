@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from datetime import timedelta
 
 
 class Tour(models.Model):
@@ -7,7 +8,7 @@ class Tour(models.Model):
     year = models.PositiveSmallIntegerField()
     start_date = models.DateField()
     end_date = models.DateField()
-    url_reference = models.CharField(max_length=50)
+    url_reference = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
         return f"{self.tour_name} ({self.year})"
@@ -32,7 +33,8 @@ class Rider(models.Model):
     team = models.CharField(max_length=100)
     nationality = models.CharField(max_length=100)
     external_id = models.CharField(max_length=100, unique=True)
-    start_number = models.PositiveSmallIntegerField()
+    start_number = models.PositiveSmallIntegerField(null=True, blank=True)
+    is_participating = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['start_number']
@@ -46,7 +48,7 @@ class StageResult(models.Model):
     rider = models.ForeignKey(Rider, on_delete=models.CASCADE, related_name='stage_results')
     finishing_time = models.DurationField()
     ranking = models.PositiveSmallIntegerField()
-    bonus = models.DurationField()
+    bonus = models.DurationField(default=timedelta(seconds=0))
 
 
 class PlayerSelection(models.Model):
