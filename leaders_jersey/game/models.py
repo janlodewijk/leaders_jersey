@@ -7,6 +7,7 @@ class Tour(models.Model):
     year = models.PositiveSmallIntegerField()
     start_date = models.DateField()
     end_date = models.DateField()
+    url_reference = models.CharField(max_length=50)
 
     def __str__(self):
         return f"{self.tour_name} ({self.year})"

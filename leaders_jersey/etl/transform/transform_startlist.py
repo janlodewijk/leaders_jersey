@@ -7,7 +7,7 @@ def transform_startlist(raw_startlist):
         team = rider.get('team_name', 'Unknown')
         nationality = rider.get('nationality', 'Unknown')
         external_id = rider.get('rider_url', 'Unknown')
-        start_number = rider.get('rider_number', 'Unknown')
+        start_number = rider.get('rider_number', 'None')
     
         rider_info = {'rider_name': rider_name,
                     'team': team,
