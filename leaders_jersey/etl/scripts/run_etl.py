@@ -16,18 +16,17 @@ from ..transform.transform_stage_info import transform_stage_info, transform_sta
 
 
 race = "tour-de-france"
-year = 2025
+year = 2024
 
-
+'''
 raw_startlist = extract_startlist(race, year)
 startlist_df = transform_startlist(raw_startlist)
 load_startlist(startlist_df)
-
-
 '''
+
+
 raw_stage_data = extract_stage_info(race, year, 1)
-stage_results = transform_stage_results(raw_stage_data, race, year, 1)
+stage_info = transform_stage_info(raw_stage_data, race, year, 1)
+# stage_results = transform_stage_results(raw_stage_data, race, year, 1)
 
-print(raw_stage_data)
-print(stage_results.head())
-'''
+print(stage_info)
