@@ -2,7 +2,8 @@ import pandas as pd
 
 def transform_stage_info(raw_stage_info, race, year, stage_number):
     stage_date = raw_stage_info.get('date', 'Unknown')
-    stage_info = {'tour': f"{race} {year}",
+    stage_info = {'race': race,
+                  'year': year,
                   'stage_number': stage_number,
                   'stage_date': stage_date,
                   'stage_type': None}

@@ -3,29 +3,29 @@ from django.contrib.auth.models import User
 from datetime import timedelta
 
 
-class Tour(models.Model):
-    tour_name = models.CharField(max_length=100)
+class Race(models.Model):
+    race_name = models.CharField(max_length=100)
     year = models.PositiveSmallIntegerField()
     start_date = models.DateField()
     end_date = models.DateField()
     url_reference = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.tour_name} ({self.year})"
+        return f"{self.race_name} ({self.year})"
 
 
 class Stage(models.Model):
-    tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name='stages')
+    race = models.ForeignKey(Race, on_delete=models.CASCADE, related_name='stages', null=True)
     stage_number = models.PositiveSmallIntegerField()
     stage_date = models.DateField()
     stage_type = models.CharField(max_length=50)     # mountain, sprint, TT etc.
 
     class Meta:
-        unique_together = ('tour', 'stage_number')  # prevents duplicate stage numbers per tour
-        ordering = ['tour', 'stage_number']
+        unique_together = ('race', 'stage_number')  # prevents duplicate stage numbers per race
+        ordering = ['race', 'stage_number']
 
     def __str__(self):
-        return f"{self.tour.tour_name} - Stage {self.stage_number}"
+        return f"{self.race.race_name} - Stage {self.stage_number}"
 
 
 class Rider(models.Model):

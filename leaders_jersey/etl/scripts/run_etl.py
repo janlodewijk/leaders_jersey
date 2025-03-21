@@ -9,6 +9,7 @@ from ..transform.transform_startlist import transform_startlist
 from ..load.load_startlist import load_startlist
 from ..extract.extract_stage import extract_stage_info
 from ..transform.transform_stage_info import transform_stage_info, transform_stage_results
+from ..load.load_stage_info import load_stage_info
 
 
 # Run this script in the terminal: python -m etl.scripts.run_etl
@@ -29,4 +30,4 @@ raw_stage_data = extract_stage_info(race, year, 1)
 stage_info = transform_stage_info(raw_stage_data, race, year, 1)
 # stage_results = transform_stage_results(raw_stage_data, race, year, 1)
 
-print(stage_info)
+load_stage_info(stage_info)
