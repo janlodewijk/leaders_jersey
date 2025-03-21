@@ -18,7 +18,7 @@ class Stage(models.Model):
     race = models.ForeignKey(Race, on_delete=models.CASCADE, related_name='stages', null=True)
     stage_number = models.PositiveSmallIntegerField()
     stage_date = models.DateField()
-    stage_type = models.CharField(max_length=50)     # mountain, sprint, TT etc.
+    stage_type = models.CharField(max_length=50, null=True, blank=True)     # mountain, sprint, TT etc.
 
     class Meta:
         unique_together = ('race', 'stage_number')  # prevents duplicate stage numbers per race
