@@ -7,6 +7,9 @@ def load_stage_info(transformed_stage_info):
         year = row['year']
         stage_number = row['stage_number']
         stage_date = row['stage_date']
+        departure = row['departure']
+        arrival = row['arrival']
+        distance = row['distance']
         stage_type = row['stage_type']
 
         # Get the Race object using url_reference and year
@@ -24,6 +27,9 @@ def load_stage_info(transformed_stage_info):
             stage_number=stage_number,
             defaults={
                 'stage_date': stage_date,
+                'departure': departure,
+                'arrival': arrival,
+                'distance': distance,
                 'stage_type': stage_type
             }
         )
@@ -31,6 +37,9 @@ def load_stage_info(transformed_stage_info):
         # If stage exists, update fields
         if not created:
             stage_obj.stage_date = stage_date
+            stage_obj.departure = departure
+            stage_obj.arrival = arrival
+            stage_obj.distance = distance
             stage_obj.stage_type = stage_type
             stage_obj.save()
 

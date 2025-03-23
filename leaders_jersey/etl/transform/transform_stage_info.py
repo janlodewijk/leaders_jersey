@@ -2,7 +2,7 @@ import pandas as pd
 
 def transform_stage_info(raw_stage_info, race, year):
     stage_info = pd.DataFrame(raw_stage_info)
-    stage_info['stage_type'] = ''
+    stage_info['stage_type'] = 'Manually'
 
     return stage_info
 
