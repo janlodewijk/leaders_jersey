@@ -17,7 +17,7 @@ def extract_stage_info(race, year):
                 'race': race,
                 'year': year,
                 'stage_number': stage_number,
-                'date': date,
+                'stage_date': date,
                 'departure': departure,
                 'arrival': arrival,
                 'distance': round(distance)

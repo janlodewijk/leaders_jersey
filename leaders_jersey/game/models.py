@@ -18,6 +18,9 @@ class Stage(models.Model):
     race = models.ForeignKey(Race, on_delete=models.CASCADE, related_name='stages', null=True)
     stage_number = models.PositiveSmallIntegerField()
     stage_date = models.DateField()
+    departure = models.CharField(max_length=100, null=True)
+    arrival = models.CharField(max_length=100, null=True, default='Unknown')
+    distance = models.PositiveSmallIntegerField(null=True)
     stage_type = models.CharField(max_length=50, null=True, blank=True)     # mountain, sprint, TT etc.
 
     class Meta:
