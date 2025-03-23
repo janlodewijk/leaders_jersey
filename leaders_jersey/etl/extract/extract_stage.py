@@ -1,26 +1,31 @@
 from procyclingstats import Stage
-from datetime import date, datetime
 
-def extract_stage_info(race, year, stage_number):
-    url = f"https://www.procyclingstats.com/race/{race}/{year}/stage-{stage_number}"
-    stage_info_raw = Stage(url)
-    
-    try:
-        date = stage_info_raw.date()
-        departure = stage_info_raw.departure()
-        arrival = stage_info_raw.arrival()
-        distance = stage_info_raw.distance()
-    except Exception as e:
-        print(f"Error scraping stage {stage_number}: {e}")
-    
-    stage_info = {
-        'date': date,
-        'departure': departure,
-        'arrival': arrival,
-        'distance': distance
-    }
+def extract_stage_info(race, year):
+    stages_info = []
+    for stage_number in range(1, 22):
+        url = f"https://www.procyclingstats.com/race/{race}/{year}/stage-{stage_number}"
+        stage_info_raw = Stage(url)
+        
+        try:
+            date = stage_info_raw.date()
+            departure = stage_info_raw.departure()
+            arrival = stage_info_raw.arrival()
+            distance = stage_info_raw.distance()
 
-    return stage_info
+        
+            stage_info = {
+                'date': date,
+                'departure': departure,
+                'arrival': arrival,
+                'distance': distance
+            }
+
+            stages_info.append(stage_info)
+
+        except Exception as e:
+            print(f"Error scraping stage {stage_number}: {e}")
+
+    return stages_info
 
 
 def extract_stage_results(race, year, stage_number):
@@ -37,4 +42,4 @@ def extract_stage_results(race, year, stage_number):
     
 
 
-print(extract_stage_results("tour-de-france", 2025, 1))
+print(extract_stage_info("tour-de-france", 2025))
