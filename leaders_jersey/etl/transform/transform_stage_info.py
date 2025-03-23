@@ -1,14 +1,10 @@
 import pandas as pd
 
-def transform_stage_info(raw_stage_info, race, year, stage_number):
-    stage_date = raw_stage_info.get('date', 'Unknown')
-    stage_info = {'race': race,
-                  'year': year,
-                  'stage_number': stage_number,
-                  'stage_date': stage_date,
-                  'stage_type': None}
-    
-    return pd.DataFrame([stage_info])
+def transform_stage_info(raw_stage_info, race, year):
+    stage_info = pd.DataFrame(raw_stage_info)
+    stage_info['stage_type'] = ''
+
+    return stage_info
 
 
 def transform_stage_results(raw_stage_info, race, year, stage_number):

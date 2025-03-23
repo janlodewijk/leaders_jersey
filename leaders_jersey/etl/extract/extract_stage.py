@@ -14,16 +14,20 @@ def extract_stage_info(race, year):
 
         
             stage_info = {
+                'race': race,
+                'year': year,
+                'stage_number': stage_number,
                 'date': date,
                 'departure': departure,
                 'arrival': arrival,
-                'distance': distance
+                'distance': round(distance)
             }
 
             stages_info.append(stage_info)
 
         except Exception as e:
             print(f"Error scraping stage {stage_number}: {e}")
+            continue
 
     return stages_info
 
@@ -39,7 +43,3 @@ def extract_stage_results(race, year, stage_number):
     except Exception as e:
         print(f"Stage {stage_number} not finished / no results yet. Error: {e}")
         return None
-    
-
-
-print(extract_stage_info("tour-de-france", 2025))
