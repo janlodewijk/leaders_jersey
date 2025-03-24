@@ -22,7 +22,7 @@ def load_stage_info(transformed_stage_info):
 
         
         # Get or create the Stage
-        stage_obj, created = StageResult.objects.get_or_create(
+        stage_obj, created = Stage.objects.get_or_create(
             race = race_obj,
             stage_number=stage_number,
             defaults={

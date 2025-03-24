@@ -15,13 +15,20 @@ class Race(models.Model):
 
 
 class Stage(models.Model):
+    STAGE_TYPE_CHOICES = [
+        ('Flat', 'Flat'),
+        ('Hills', 'Hills'),
+        ('Mountain', 'Mountain'),
+        ('TT', 'Time Trial'),
+        ('Team TT', 'Team Time Trial')
+    ]
     race = models.ForeignKey(Race, on_delete=models.CASCADE, related_name='stages', null=True)
     stage_number = models.PositiveSmallIntegerField()
     stage_date = models.DateField()
     departure = models.CharField(max_length=100, null=True)
     arrival = models.CharField(max_length=100, null=True, default='Unknown')
     distance = models.PositiveSmallIntegerField(null=True)
-    stage_type = models.CharField(max_length=50, null=True, blank=True)     # mountain, sprint, TT etc.
+    stage_type = models.CharField(max_length=20, choices=STAGE_TYPE_CHOICES, null=True, blank=True)     # mountain, sprint, TT etc.
 
     class Meta:
         unique_together = ('race', 'stage_number')  # prevents duplicate stage numbers per race
