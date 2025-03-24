@@ -1,5 +1,5 @@
 import pandas as pd
-from game.models import Race, Stage
+from game.models import Race, Stage, Rider, StageResult
 
 def load_stage_info(transformed_stage_info):
     for index, row in transformed_stage_info.iterrows():
@@ -22,7 +22,7 @@ def load_stage_info(transformed_stage_info):
 
         
         # Get or create the Stage
-        stage_obj, created = Stage.objects.get_or_create(
+        stage_obj, created = StageResult.objects.get_or_create(
             race = race_obj,
             stage_number=stage_number,
             defaults={
@@ -42,5 +42,51 @@ def load_stage_info(transformed_stage_info):
             stage_obj.distance = distance
             stage_obj.stage_type = stage_type
             stage_obj.save()
+
+
+def load_stage_results(transformed_stage_results):
+    for index, row in transformed_stage_results.iterrows():
+        race = row['race']
+        year = row['year']
+        stage_number = row['stage_number']
+        external_id = row['external_id']
+        finishing_time = row['finishing_time']
+        ranking = row['ranking']
+        bonus = row['bonus']
+
+        try:
+            race_obj = Race.objects.get(url_reference=race, year=year)
+        except Race.DoesNotExist:
+            print(f"Race not found: {race} {year}. Skipping.")
+            continue
+
+        try:
+            stage_obj = Stage.objects.get(race=race_obj, stage_number=stage_number)
+        except Stage.DoesNotExist:
+            print(f"Stage {stage_number} not found for {race} {year}. Skipping.")
+            continue
+
+        try:
+            rider_obj = Rider.objects.get(external_id=external_id)
+        except Rider.DoesNotExist:
+            print(f"Rider {external_id} not found. Skipping.")
+            continue
+
+        # Get or create the StageResult
+        result_obj, created = StageResult.objects.get_or_create(
+            stage=stage_obj,
+            rider=rider_obj,
+            defaults={
+                'finishing_time': finishing_time,
+                'ranking': ranking,
+                'bonus': bonus
+            }
+        )
+
+        if not created:
+            result_obj.finishing_time = finishing_time
+            result_obj.ranking = ranking
+            result_obj.bonus = bonus
+            result_obj.save()
 
 

@@ -13,7 +13,7 @@ def transform_stage_results(raw_stage_info, race, year, stage_number):
         external_id = rider.get('rider_url', 'Unknown')
         finishing_time = pd.to_timedelta(rider.get('time', 'Unknown'))
         ranking = rider.get('rank', 'Unknown')
-        bonus = round(pd.to_timedelta(rider.get('bonus', '0:00:00')).total_seconds())
+        bonus = pd.to_timedelta(rider.get('bonus', '0:00:00'))
 
         rider = {'stage_number': stage_number,
                  'race': race,

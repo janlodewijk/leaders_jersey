@@ -7,7 +7,7 @@ django.setup()
 from ..extract.extract_startlist import extract_startlist
 from ..transform.transform_startlist import transform_startlist
 from ..load.load_startlist import load_startlist
-from ..extract.extract_stage import extract_stage_info
+from ..extract.extract_stage import extract_stage_info, extract_stage_results
 from ..transform.transform_stage_info import transform_stage_info, transform_stage_results
 from ..load.load_stage_info import load_stage_info
 
@@ -25,9 +25,13 @@ startlist_df = transform_startlist(raw_startlist)
 load_startlist(startlist_df)
 '''
 
-
+'''
 raw_stage_data = extract_stage_info(race, year)
 stage_info = transform_stage_info(raw_stage_data, race, year)
-# stage_results = transform_stage_results(raw_stage_data, race, year, 1)
+# stage_results = transform_stage_results(raw_stage_data, race, year, 1)'
+'''
 
-load_stage_info(stage_info)
+raw_results = extract_stage_results(race, 2024, 1)
+trans_results = transform_stage_results(raw_results, race, year, 2)
+
+print(trans_results.head())
