@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Rider Selection</h2>
+    <p><strong>Total GC Time:</strong> to be calculated</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Stage</th>
+                <th>Route</th>
+                <th>Distance</th>
+                <th>Type</th>
+                <th>Your Rider</th>
+                <th>Finishing Time</th>
+                <th>Bonus</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in stage_data %}
+                <tr>
+                    <td>Stage {{ item.stage.stage_number }}</td>
+                    <td>{{ item.stage.departure }} - {{ item.stage.arrival }}</td>
+                    <td>{{ item.stage.distance }} km</td>
+                    <td>{{ item.stage.stage_type }}</td>
+                    <td>
+                        {% if item.locked %}
+                            {% if item.selection %}
+                                {{ item.selection.rider_name }}
+                            {% else  %}
+                                -
+                            {% endif %}
+                        {% else %}
+                            <form method="post" action="{% url 'save_selection' item.stage.id %}">
+                                {% csrf_token %}
+                                <select name="rider_id">
+                                    {% for rider in item.riders %}
+                                        <option value="{{ rider.id }}"
+                                            {% if item.selection and rider.id == item.selection.id %}selected{% endif %}>
+                                            {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit">Save</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.result %}
+                            {{ item.result.finishing_time }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.result %}
+                            {{ item.result.bonus }}
+                        {% else %}
+                            -
+                        {% endif %}                            
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
