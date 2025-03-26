@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Leader's Jersey</h1>
+    {% if user.is_authenticated %}
+        <h2>Welcome back, {{user.username}}!</h2>
+        <a href="/profile/">Click here to go to your profile page</a><br>
+        <a href="/rider_selection/">Click here to select riders</a><br>
+        <a href="/leaderboard">Click here to go to the leaderboard</a>
+    {% else %}
+        <h2>Welcome to Leader's Jersey</h2>
+        <a href="/register/">Click here to register</a><br>
+        <a href="/login/">Click here to login</a>
+    {% endif %}
+{% endblock %}
