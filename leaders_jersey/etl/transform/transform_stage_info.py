@@ -9,7 +9,7 @@ def transform_stage_info(raw_stage_info, race, year):
 
 def transform_stage_results(raw_stage_info, race, year, stage_number):
     stage_results = []
-    for rider in raw_stage_info.get('gc', []):
+    for rider in raw_stage_info.get('results', []):
         external_id = rider.get('rider_url', 'Unknown')
         finishing_time = pd.to_timedelta(rider.get('time', 'Unknown'))
         ranking = rider.get('rank', 'Unknown')

@@ -5,7 +5,7 @@ from django.contrib.auth.views import LoginView
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from game.models import Race, Stage, Rider, PlayerSelection, StageResult
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -68,12 +68,13 @@ def rider_selection(request):
     selection_lookup = { sel.stage_id: sel for sel in player_selections }
     
     stage_data = []
+    total_gc_time = timedelta(0)
 
     # Define 12:00 selection deadline for each stage
     for stage in stages:
         deadline = timezone.make_aware(datetime.combine(stage.stage_date, time(hour=12)))
         locked = timezone.now() > deadline
-        # locked = False  # This line is just for testing with a race from the past. Remove it if you want it to operate in the present.
+        locked = False  # This line is just for testing with a race from the past. Remove it if you want it to operate in the present.
 
         # Check if user already made a selection for this stage
         selection = selection_lookup.get(stage.id)
@@ -94,9 +95,14 @@ def rider_selection(request):
             'result': result,
             'riders': riders
         })
+
+        if result:
+            adjusted_time = result.finishing_time - result.bonus
+            total_gc_time += adjusted_time
     
     return render(request, 'rider_selection.html', {
-        'stage_data': stage_data
+        'stage_data': stage_data,
+        'total_gc_time': total_gc_time
     })
 
 
