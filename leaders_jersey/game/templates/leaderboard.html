@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>GC Leaderboard</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Selections</th>
+                <th>Total Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in leaderboard_data %}
+                <tr {% if entry.player == request.user %}style="font-weight: bold;"{% endif %}>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ entry.player.username}}</td>
+                    <td>{{ entry.num_selections }}</td>
+                    <td>{{ entry.total_time }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4">No player data available yet.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

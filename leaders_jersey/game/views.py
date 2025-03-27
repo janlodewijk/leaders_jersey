@@ -8,6 +8,7 @@ from game.models import Race, Stage, Rider, PlayerSelection, StageResult
 from datetime import datetime, time, timedelta
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.contrib.auth.models import User
 
 def register(request):
     if request.method == 'POST':
@@ -74,7 +75,7 @@ def rider_selection(request):
     for stage in stages:
         deadline = timezone.make_aware(datetime.combine(stage.stage_date, time(hour=12)))
         locked = timezone.now() > deadline
-        locked = False  # This line is just for testing with a race from the past. Remove it if you want it to operate in the present.
+        # locked = False  # This line is just for testing with a race from the past. Remove it if you want it to operate in the present.
 
         # Check if user already made a selection for this stage
         selection = selection_lookup.get(stage.id)
@@ -128,3 +129,35 @@ def save_selection(request, stage_id):
 
     return redirect('rider_selection')
 
+
+@login_required
+def leaderboard(request):
+    # Get all users who have made at least one selection
+    users_with_selections = User.objects.filter(selections__isnull=False).distinct()
+
+    leaderboard_data = []
+
+    for user in users_with_selections:
+        total_time = timedelta(0)
+        
+        selections = PlayerSelection.objects.filter(player=user).select_related('stage', 'rider')
+    
+        for selection in selections:
+            try:
+                result = StageResult.objects.get(stage=selection.stage, rider=selection.rider)
+                total_time += result.finishing_time - result.bonus
+            except StageResult.DoesNotExist:
+                continue
+
+        leaderboard_data.append({
+            'player': user,
+            'total_time': total_time,
+            'num_selections': len(selections)
+        })
+
+    # Sort the leaderboard by total time    
+    leaderboard_data.sort(key=lambda x: x['total_time'])
+
+    return render(request,
+                  'leaderboard.html',
+                  {'leaderboard_data': leaderboard_data})
