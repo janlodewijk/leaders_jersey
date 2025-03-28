@@ -57,7 +57,7 @@ def rider_selection(request):
         stages = []
 
     # Get all riders to show in the dropdown
-    riders = Rider.objects.filter(is_participating=True).order_by('start_number')
+    riders = Rider.objects.filter(is_participating=True).order_by('rider_name')
 
     # Get all PlayerSelections for this user and race
     player_selections = PlayerSelection.objects.filter(
@@ -75,7 +75,9 @@ def rider_selection(request):
     for stage in stages:
         deadline = timezone.make_aware(datetime.combine(stage.stage_date, time(hour=12)))
         locked = timezone.now() > deadline
-        # locked = False  # This line is just for testing with a race from the past. Remove it if you want it to operate in the present.
+        locked = False  # This line is just for testing with a race from the past. Remove it if you want it to operate in the present.
+
+        deadline_iso = deadline.isoformat()
 
         # Check if user already made a selection for this stage
         selection = selection_lookup.get(stage.id)
@@ -94,7 +96,8 @@ def rider_selection(request):
             'locked': locked,
             'selection': selected_rider,
             'result': result,
-            'riders': riders
+            'riders': riders,
+            'deadline': deadline_iso
         })
 
         if result:

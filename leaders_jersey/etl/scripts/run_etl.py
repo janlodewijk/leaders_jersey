@@ -16,9 +16,8 @@ from ..load.load_stage_info import load_stage_info, load_stage_results
 
 
 
-race = "tour-de-france"
-year = 2024
-stage = 2
+race = "giro-d-italia"
+year = 2025
 
 '''
 raw_startlist = extract_startlist(race, year)
@@ -27,14 +26,15 @@ load_startlist(startlist_df)
 '''
 
 
-'''
+
 raw_stage_data = extract_stage_info(race, year)
 stage_info = transform_stage_info(raw_stage_data, race, year)
 print(stage_info.head())
 load_stage_info(stage_info)
+
+
 '''
-
-
 raw_results = extract_stage_results(race, year, stage)
 trans_results = transform_stage_results(raw_results, race, year, stage)
 load_stage_results(trans_results)
+'''

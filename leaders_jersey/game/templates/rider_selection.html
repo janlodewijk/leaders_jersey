@@ -10,6 +10,7 @@
                 <th>Route</th>
                 <th>Distance</th>
                 <th>Type</th>
+                <th>Deadline</th>
                 <th>Your Rider</th>
                 <th>Finishing Time</th>
                 <th>Bonus</th>
@@ -22,6 +23,13 @@
                     <td>{{ item.stage.departure }} - {{ item.stage.arrival }}</td>
                     <td>{{ item.stage.distance }} km</td>
                     <td>{{ item.stage.stage_type }}</td>
+                    <td>
+                        {% if not item.locked %}
+                            <span id="countdown-stage-{{ item.stage.stage_number }}" data-deadline="{{ item.deadline }}"></span>
+                        {% else %}
+                            Locked
+                        {% endif %}
+                    </td>
                     <td>
                         {% if item.locked %}
                             {% if item.selection %}
