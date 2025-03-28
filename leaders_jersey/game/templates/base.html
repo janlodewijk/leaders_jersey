@@ -10,12 +10,19 @@
         <h1>Leader's Jersey</h1>
         <nav>
             <a href="/">Home</a>
-            <a href="/login/">Login</a>
-            <form method="post" action="/logout/" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit">Logout</button>
-            </form>
-            <a href="/register/">Register</a>
+
+            {% if user.is_authenticated %}
+                <a href="/profile/">Profile</a>
+                <a href="/rider_selection/">Rider Selection</a>
+                <a href="/leaderboard/">Leaderboard</a>
+                <form method="post" action="/logout/" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit">Logout</button>
+                </form>
+            {% else %}
+                <a href="/login/">Login</a>
+                <a href="/register/">Register</a>
+            {% endif %}
         </nav>
         <hr>
     </header>
