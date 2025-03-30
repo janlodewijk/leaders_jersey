@@ -52,7 +52,7 @@ def rider_selection(request):
 
     # Retrieve the stages for this race
     if current_race:
-        stages = Stage.objects.filter(race=current_race).order_by('stage_number')
+        stages = Stage.objects.filter(race=current_race).order_by('stage_date', 'stage_number')
     else:
         stages = []
 
@@ -65,17 +65,33 @@ def rider_selection(request):
         stage__in=stages
     ).select_related('stage', 'rider')
 
+    # Get all selected stage rider IDs
+    selected_stage_rider_ids = set(sel.rider.id for sel in player_selections if sel.rider and sel.stage is not None)
+
     # Build a lookup dictionary: { stage_id: selection }
     selection_lookup = { sel.stage_id: sel for sel in player_selections }
+
+    # Get the backup rider selection (stage=None)
+    backup_selection = PlayerSelection.objects.filter(player=request.user, stage=None).first()
+
+    # Get the backup rider ID
+    backup_rider_id = backup_selection.rider.id if backup_selection and backup_selection.rider else None
+
+    # Determine stage 1 deadline
+    if stages:
+        stage1_deadline = timezone.make_aware(datetime.combine(stages[0].stage_date, time(hour=12)))
+        backup_locked = timezone.now() > stage1_deadline
+    else:
+        backup_locked = True
     
     stage_data = []
     total_gc_time = timedelta(0)
 
     # Define 12:00 selection deadline for each stage
     for stage in stages:
-        deadline = timezone.make_aware(datetime.combine(stage.stage_date, time(hour=12)))
+        deadline = timezone.make_aware(datetime.combine(stage.stage_date, stage.start_time))
         locked = timezone.now() > deadline
-        locked = False  # This line is just for testing with a race from the past. Remove it if you want it to operate in the present.
+        # locked = False  # This line is just for testing with a race from the past. Remove it if you want it to operate in the present.
 
         deadline_iso = deadline.isoformat()
 
@@ -96,7 +112,7 @@ def rider_selection(request):
             'locked': locked,
             'selection': selected_rider,
             'result': result,
-            'riders': riders,
+            'riders': riders.exclude(id=backup_rider_id) if backup_rider_id else riders,
             'deadline': deadline_iso
         })
 
@@ -106,7 +122,10 @@ def rider_selection(request):
     
     return render(request, 'rider_selection.html', {
         'stage_data': stage_data,
-        'total_gc_time': total_gc_time
+        'total_gc_time': total_gc_time,
+        'backup_selection': backup_selection,
+        'backup_locked': backup_locked,
+        'backup_riders': riders.exclude(id__in=selected_stage_rider_ids),
     })
 
 
@@ -164,3 +183,28 @@ def leaderboard(request):
     return render(request,
                   'leaderboard.html',
                   {'leaderboard_data': leaderboard_data})
+
+
+@require_POST
+def save_backup_selection(request):
+    rider_id = request.POST.get("rider_id")
+    user = request.user
+
+    if not rider_id:
+        # No rider selected, do nothing
+        return redirect('rider_selection')
+    
+    rider = get_object_or_404(Rider, id=rider_id)
+
+    # Save or update the PlayerSelection with stage=None for this user
+    selection, created = PlayerSelection.objects.get_or_create(
+        player=user,
+        stage=None,     # Which means no stage, so backup rider
+        defaults={'rider': rider}
+    )
+
+    if not created:
+        selection.rider = rider
+        selection.save()
+
+    return redirect('rider_selection')
