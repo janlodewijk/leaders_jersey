@@ -59,7 +59,7 @@ class Rider(models.Model):
 class StageResult(models.Model):
     stage = models.ForeignKey(Stage, on_delete=models.CASCADE, related_name='results')
     rider = models.ForeignKey(Rider, on_delete=models.CASCADE, related_name='stage_results')
-    finishing_time = models.DurationField()
+    finishing_time = models.DurationField(null=True, blank=True)
     ranking = models.PositiveSmallIntegerField()
     bonus = models.DurationField(default=timedelta(seconds=0))
 

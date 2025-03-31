@@ -59,6 +59,17 @@ def rider_selection(request):
     # Get all riders to show in the dropdown
     riders = Rider.objects.filter(is_participating=True).order_by('rider_name')
 
+    # Get all riders who did not finish in the last stage (or a previous stage)
+    dnf_riders = StageResult.objects.filter(
+        stage__race=current_race,
+        finishing_time__isnull=True
+    ).values_list('rider_id', flat=True)
+
+    # To make sure the dnf riders are at the bottom
+    eligible_riders = riders.exclude(id__in=dnf_riders)
+    dnf_riders_qs = riders.filter(id__in=dnf_riders)
+    sorted_riders = list(eligible_riders) + list(dnf_riders_qs)
+
     # Get all PlayerSelections for this user and race
     player_selections = PlayerSelection.objects.filter(
         player=request.user,
@@ -77,10 +88,13 @@ def rider_selection(request):
     # Get the backup rider ID
     backup_rider_id = backup_selection.rider.id if backup_selection and backup_selection.rider else None
 
+    # Allow changing the backup rider if current one DNF
+    backup_rider_dnf = backup_rider_id in dnf_riders if backup_rider_id else False
+
     # Determine stage 1 deadline
     if stages:
         stage1_deadline = timezone.make_aware(datetime.combine(stages[0].stage_date, time(hour=12)))
-        backup_locked = timezone.now() > stage1_deadline
+        backup_locked = timezone.now() > stage1_deadline and not backup_rider_dnf
     else:
         backup_locked = True
 
@@ -103,6 +117,7 @@ def rider_selection(request):
         result = None
         used_backup = False
         used_fallback = False
+        result_source = None
 
         if selected_rider:
             result_source = None
@@ -142,6 +157,7 @@ def rider_selection(request):
             'selection': selected_rider,
             'result': result,
             'riders': riders.exclude(id=backup_rider_id) if backup_rider_id else riders,
+            'sorted_riders': sorted_riders,
             'deadline': deadline_iso,
             'used_backup': used_backup,
             'used_fallback': used_fallback,
@@ -154,18 +170,25 @@ def rider_selection(request):
         'backup_selection': backup_selection,
         'backup_locked': backup_locked,
         'backup_riders': riders.exclude(id__in=selected_stage_rider_ids),
+        'dnf_riders': dnf_riders,
     })
 
 
 
 @require_POST
+@login_required
 def save_selection(request, stage_id):
     rider_id = request.POST.get("rider_id")
-
-    # Get the Stage using stage_id from the URL, Rider object from the form and current user (already available)
     stage = get_object_or_404(Stage, id=stage_id)
-    rider = get_object_or_404(Rider, id=rider_id)
     user = request.user
+
+    # Handle empty rider selection
+    if not rider_id:
+        # Optionally: delete the selection if one exists
+        PlayerSelection.objects.filter(player=user, stage=stage).delete()
+        return redirect('rider_selection')
+
+    rider = get_object_or_404(Rider, id=rider_id)
 
     # Create or update the user's player selection
     selection, created = PlayerSelection.objects.get_or_create(
@@ -179,6 +202,7 @@ def save_selection(request, stage_id):
         selection.save()
 
     return redirect('rider_selection')
+
 
 
 @login_required
@@ -215,20 +239,22 @@ def leaderboard(request):
 
 
 @require_POST
+@login_required
 def save_backup_selection(request):
     rider_id = request.POST.get("rider_id")
     user = request.user
 
+    # If empty, remove the backup rider
     if not rider_id:
-        # No rider selected, do nothing
+        PlayerSelection.objects.filter(player=user, stage=None).delete()
         return redirect('rider_selection')
-    
+
     rider = get_object_or_404(Rider, id=rider_id)
 
-    # Save or update the PlayerSelection with stage=None for this user
+    # Create or update
     selection, created = PlayerSelection.objects.get_or_create(
         player=user,
-        stage=None,     # Which means no stage, so backup rider
+        stage=None,
         defaults={'rider': rider}
     )
 

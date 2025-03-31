@@ -2,32 +2,46 @@
 
 {% block content %}
     <h2>Rider Selection</h2>
-    <p><strong>Your personal Total GC Time:</strong>  {{ total_gc_time }}</p>
-    <h3>Backup Rider</h3>
-    <p>If the rider you've selected for a stage, does not finish the stage, you will get the time of your backup rider.<br> <strong>Attention:</strong><br>- You can select only one backup rider for the whole grand tour<br>- You <strong>cannot</strong> select this rider for your stages (and vice versa)</p>
-
-    {% if backup_locked %}
-        {% if backup_selection %}
-            <p><strong>Your backup rider:</strong> {{ backup_selection.rider.rider_name }} ({{ backup_selection.rider.team }})</p>
-        {% else %}
-            <p><strong>No backup rider selected</strong></p>
+    <h3><strong>Your personal Total GC Time:</strong>  {{ total_gc_time }}</h3>
+    <div style="border: 2px solid #ccc; padding: 1em; margin-bottom: 2em; border-radius: 8px; background-color: #f9f9f9; max-width: 600px; margin: 0 auto;">
+        <h3>Backup Rider</h3>
+        <p>If the rider you've selected for a stage (in the table below) does not finish the stage, you will get the time of your backup rider.<br>
+            <strong>Attention:</strong>
+            <br>- You can select only one backup rider for the whole grand tour (only in case of a DNF, you can select a new one)<br>
+            - You <strong>cannot</strong> select this rider for your stages (and vice versa)
+        </p>
+        {% if backup_selection and backup_selection.rider.id in dnf_riders %}
+            <p style="color:red;"><strong>Warning:</strong> Your backup rider did not finish and should be replaced.</p>
         {% endif %}
-    {% else %}
-        <form method="post" action="{% url 'save_backup_selection' %}">
-            {% csrf_token %}
-            <label for="backup_rider">Choose your backup rider:</label>
-            <select name="rider_id" id="backup_rider">
-                <option value="">-- Select Rider --</option>
-                {% for rider in backup_riders %}
-                    <option value="{{ rider.id}}"
-                        {% if backup_selection and rider.id == backup_selection.rider.id %}selected{% endif %}>
-                        {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }})
-                    </option>
-                {% endfor %}
-            </select>
-            <button type="submit">Save Backup</button>            
-        </form>
-    {% endif %}
+        {% if backup_locked %}
+            {% if backup_selection %}
+                <p><strong>Your backup rider:</strong> {{ backup_selection.rider.rider_name }} ({{ backup_selection.rider.team }})</p>
+            {% else %}
+                <p><strong>No backup rider selected</strong></p>
+            {% endif %}
+        {% else %}
+            <form method="post" action="{% url 'save_backup_selection' %}">
+                {% csrf_token %}
+                <label for="backup_rider">Choose your backup rider:</label>
+                <select name="rider_id" id="backup_rider">
+                    <option value="">-- Select Rider --</option>
+                    {% for rider in backup_riders %}
+                        {% if rider.id in dnf_riders %}
+                            <option value="{{ rider.id }}" disabled>
+                                {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }}) - DNF
+                            </option>
+                        {% else %}
+                            <option value="{{ rider.id}}"
+                                {% if backup_selection and rider.id == backup_selection.rider.id %}selected{% endif %}>
+                                {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }})
+                            </option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <button type="submit">Save Backup</button>            
+            </form>
+        {% endif %}
+    </div>
     <hr>
     <table>
         <thead>
@@ -69,11 +83,17 @@
                                 {% csrf_token %}
                                 <select name="rider_id">
                                     <option value="">-- Select Rider --</option>
-                                    {% for rider in item.riders %}
-                                        <option value="{{ rider.id }}"
-                                            {% if item.selection and rider.id == item.selection.id %}selected{% endif %}>
-                                            {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }})
-                                        </option>
+                                    {% for rider in item.sorted_riders %}
+                                        {% if rider.id in dnf_riders %}
+                                            <option value="{{ rider.id}}" disabled>
+                                                {{ rider.start_number }} {{ rider.rider_name }} ({{ rider.team }}) - DNF
+                                            </option>
+                                        {% else %}
+                                            <option value="{{ rider.id }}"
+                                                {% if item.selection and rider.id == item.selection.id %}selected{% endif %}>
+                                                {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }})
+                                            </option>
+                                        {% endif %}
                                     {% endfor %}
                                 </select>
                                 <button type="submit">Save</button>
@@ -99,7 +119,7 @@
                             Last finisher
                         {% elif item.used_backup %}
                             Backup
-                        {% elif item.seleciton %}
+                        {% elif item.selection %}
                             Selection 
                         {% else %}
                             -
