@@ -1,93 +1,77 @@
-🚴‍♂️ Leader's Jersey
-Leader's Jersey is a web-based cycling prediction game where players select one rider per stage of a Grand Tour. The aim is to beat the GC (general classification) time using strategy, foresight, and a bit of luck.
+# 🚴‍♂️ Leader's Jersey
 
-🏁 How It Works
+**Leader's Jersey** is a web-based cycling prediction game where players select one rider per stage of a Grand Tour. The aim is to beat the GC (general classification) time using strategy, foresight, and a bit of luck.
+
+---
+
+## 🏁 How It Works
+
 Each player:
 
-Selects one stage rider per stage (before the 12:00 deadline).
-
-Selects one backup rider before the start of stage 1.
-
-Earns time equal to their selected rider’s stage result (minus bonus seconds).
-
-If their rider DNF'd, the backup rider’s time is used.
-
-If both DNF’d, the last finisher’s time is used as a fallback.
-
-Selections are locked at the stage deadline and results appear once the stage finishes.
+- Selects one **stage rider** per stage (before the start of each stage).
+- Selects one **backup rider** before the start of stage 1.
+- Earns time equal to their selected rider’s stage result (minus bonus seconds).
+- If their rider DNF'd, the **backup rider’s time** is used.
+- If both the stage selected rider and backup DNF’d, the **last finisher’s time** is used as a fallback.
+- Selections are **locked at the stage deadline** and results appear once the stage finishes.
 
 The player with the lowest total GC time at the end of the race wins! 🏆
 
-🔧 Features
-✅ User registration and login
+---
 
-✅ ETL pipeline to fetch real-time stage data and results from ProCyclingStats
+## 🔧 Features
 
-✅ Admin interface for managing races, stages, riders and results
+- ✅ User registration and login
+- ✅ ETL pipeline to fetch real-time stage data and results from ProCyclingStats
+- ✅ Admin interface for managing races, stages, riders and results
+- ✅ Dynamic countdown timer for each stage
+- ✅ Auto-freezing selections after the deadline
+- ✅ Total GC time calculation per user
+- ✅ Leaderboard view
+- ✅ DNF fallback logic with backup rider
+- ✅ Clean and customizable UI (Giro pink theme ready!)
 
-✅ Dynamic countdown timer for each stage
+---
 
-✅ Auto-freezing selections after the deadline
+## 📦 Tech Stack
 
-✅ Total GC time calculation per user
+- **Backend**: Django (Python)
+- **Frontend**: Django Templates, HTML/CSS, JavaScript
+- **Database**: SQLite (development)
+- **Data Source**: [ProCyclingStats.com](https://www.procyclingstats.com/) via `procyclingstats` Python scraper
+- **Admin Tools**: Django admin
 
-✅ Leaderboard view
+---
 
-✅ DNF fallback logic with backup rider
+## 🚀 Getting Started
 
-✅ Clean and customizable UI (Giro pink theme ready!)
+1. Clone the repo  
+ 
+   git clone https://github.com/yourusername/leaders-jersey.git
+   cd leaders-jersey
 
-📦 Tech Stack
-Backend: Django (Python)
+2. Set up a virtual environment
 
-Frontend: Django Templates, HTML/CSS, JavaScript
+    python -m venv venv
+    source venv/bin/activate  # or venv\Scripts\activate on Windows
 
-Database: SQLite (development)
+3. Install dependencies
 
-Data Source: ProCyclingStats.com via procyclingstats Python scraper
+    pip install -r requirements.txt
 
-Admin Tools: Django admin
+4. Run migrations & create superuser
 
-🚀 Getting Started
-Clone the repo
+    python manage.py migrate
+    python manage.py createsuperuser
 
-bash
-Kopiëren
-Bewerken
-git clone https://github.com/yourusername/leaders-jersey.git
-cd leaders-jersey
-Set up a virtual environment
+5. Start the development server
 
-bash
-Kopiëren
-Bewerken
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-Install dependencies
+    python manage.py runserver
 
-bash
-Kopiëren
-Bewerken
-pip install -r requirements.txt
-Run migrations & create superuser
+6. Visit http://127.0.0.1:8000 in your browser
 
-bash
-Kopiëren
-Bewerken
-python manage.py migrate
-python manage.py createsuperuser
-Start the development server
+🛠️ **Project Structure**
 
-bash
-Kopiëren
-Bewerken
-python manage.py runserver
-Visit http://127.0.0.1:8000 in your browser
-
-🛠️ Project Structure
-csharp
-Kopiëren
-Bewerken
 leaders_jersey/
 ├── game/                  # Django app (models, views, templates)
 ├── etl/                   # Custom ETL pipeline
@@ -95,7 +79,9 @@ leaders_jersey/
 ├── static/                # Static JS/CSS
 ├── db.sqlite3             # Dev database
 └── manage.py
-🗺️ Roadmap
+
+🗺️ **Roadmap**
+
 🟢 Add form validation & improved UX
 
 🟢 Add real GC comparison + highlight if user beats it
@@ -106,6 +92,7 @@ leaders_jersey/
 
 🔜 Email notifications (optional)
 
-🙌 Credits
-Built with ❤️ by Jan Lodewijk Eshuis.
-Data provided by ProCyclingStats.
+🙌 **Credits**
+
+Built with ❤️ by Jan Lodewijk Eshuis
+Data provided by ProCyclingStats.com
