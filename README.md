@@ -90,6 +90,7 @@ leaders_jersey/
 venv/                      # Python virtual environment
 .gitignore
 README.md
+requirements.txt
 
 
 🗺️ **Roadmap**
