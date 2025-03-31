@@ -207,16 +207,28 @@ def save_selection(request, stage_id):
 
 @login_required
 def leaderboard(request):
-    # Get all users who have made at least one selection
-    users_with_selections = User.objects.filter(selections__isnull=False).distinct()
+    # Get the current race (latest year)
+    current_race = Race.objects.order_by('-year').first()
+
+    # Get the stages for the current race
+    stages = Stage.objects.filter(race=current_race)
+
+    # Get all users who made selections for those stages
+    users_with_selections = User.objects.filter(
+        selections__stage__in=stages
+    ).distinct()
 
     leaderboard_data = []
 
     for user in users_with_selections:
         total_time = timedelta(0)
-        
-        selections = PlayerSelection.objects.filter(player=user).select_related('stage', 'rider')
-    
+
+        # Get only this user's stage selections for the current race
+        selections = PlayerSelection.objects.filter(
+            player=user,
+            stage__in=stages
+        ).select_related('stage', 'rider')
+
         for selection in selections:
             try:
                 result = StageResult.objects.get(stage=selection.stage, rider=selection.rider)
@@ -230,12 +242,13 @@ def leaderboard(request):
             'num_selections': len(selections)
         })
 
-    # Sort the leaderboard by total time    
+    # Sort by total time
     leaderboard_data.sort(key=lambda x: x['total_time'])
 
-    return render(request,
-                  'leaderboard.html',
-                  {'leaderboard_data': leaderboard_data})
+    return render(request, 'leaderboard.html', {
+        'leaderboard_data': leaderboard_data
+    })
+
 
 
 @require_POST
