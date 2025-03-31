@@ -73,12 +73,24 @@ The player with the lowest total GC time at the end of the race wins! 🏆
 🛠️ **Project Structure**
 
 leaders_jersey/
-├── game/                  # Django app (models, views, templates)
-├── etl/                   # Custom ETL pipeline
-├── templates/             # HTML templates
-├── static/                # Static JS/CSS
-├── db.sqlite3             # Dev database
-└── manage.py
+├── etl/                   # ETL pipeline (extract, transform, load scripts)
+├── game/                  # Main Django app
+│   ├── admin.py
+│   ├── models.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── templates/         # HTML templates (e.g. base.html, login.html, etc.)
+│   └── static/            # Static files (JS, CSS, images)
+├── leaders_jersey/        # Django project settings
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── db.sqlite3             # SQLite database (development)
+├── manage.py              # Django CLI entry point
+venv/                      # Python virtual environment
+.gitignore
+README.md
+
 
 🗺️ **Roadmap**
 
