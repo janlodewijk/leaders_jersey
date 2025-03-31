@@ -40,6 +40,7 @@
                 <th>Your Rider</th>
                 <th>Finishing Time</th>
                 <th>Bonus</th>
+                <th>Source</th>
             </tr>
         </thead>
         <tbody>
@@ -92,6 +93,17 @@
                         {% else %}
                             -
                         {% endif %}                            
+                    </td>
+                    <td>
+                        {% if item.used_fallback %}
+                            Last finisher
+                        {% elif item.used_backup %}
+                            Backup
+                        {% elif item.seleciton %}
+                            Selection 
+                        {% else %}
+                            -
+                        {% endif %}                        
                     </td>
                 </tr>
             {% endfor %}

@@ -83,11 +83,11 @@ def rider_selection(request):
         backup_locked = timezone.now() > stage1_deadline
     else:
         backup_locked = True
-    
+
     stage_data = []
     total_gc_time = timedelta(0)
 
-    # Define 12:00 selection deadline for each stage
+    # Define selection deadline for each stage (12:00 by default)
     for stage in stages:
         deadline = timezone.make_aware(datetime.combine(stage.stage_date, stage.start_time))
         locked = timezone.now() > deadline
@@ -99,13 +99,42 @@ def rider_selection(request):
         selection = selection_lookup.get(stage.id)
         selected_rider = selection.rider if selection else None
 
-        # Check if the stage result exists for this rider
+        # Check result logic with fallback and backup rider
         result = None
-        if selection:
+        used_backup = False
+        used_fallback = False
+
+        if selected_rider:
+            result_source = None
             try:
-                result = StageResult.objects.get(stage=stage, rider=selection.rider)
+                result = StageResult.objects.get(stage=stage, rider=selected_rider)
+                result_source = "selection"
             except StageResult.DoesNotExist:
                 result = None
+
+        # Try backup rider if main rider has no result
+        if not result and backup_selection and backup_selection.rider:
+            try:
+                result = StageResult.objects.get(stage=stage, rider=backup_selection.rider)
+                used_backup = True
+                result_source = "backup"
+            except StageResult.DoesNotExist:
+                pass
+
+        # Final fallback to last finisher if both failed
+        if not result:
+            last_result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
+            if last_result:
+                result = last_result
+                used_fallback = True
+                result_source = "last finisher"
+
+        if result:
+            if used_fallback:
+                total_gc_time += result.finishing_time  # no bonus
+            else:
+                total_gc_time += result.finishing_time - result.bonus
+
 
         stage_data.append({
             'stage': stage,
@@ -113,13 +142,12 @@ def rider_selection(request):
             'selection': selected_rider,
             'result': result,
             'riders': riders.exclude(id=backup_rider_id) if backup_rider_id else riders,
-            'deadline': deadline_iso
+            'deadline': deadline_iso,
+            'used_backup': used_backup,
+            'used_fallback': used_fallback,
+            'result_source': result_source
         })
 
-        if result:
-            adjusted_time = result.finishing_time - result.bonus
-            total_gc_time += adjusted_time
-    
     return render(request, 'rider_selection.html', {
         'stage_data': stage_data,
         'total_gc_time': total_gc_time,
@@ -127,6 +155,7 @@ def rider_selection(request):
         'backup_locked': backup_locked,
         'backup_riders': riders.exclude(id__in=selected_stage_rider_ids),
     })
+
 
 
 @require_POST
