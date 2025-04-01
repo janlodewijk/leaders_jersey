@@ -2,11 +2,15 @@ from procyclingstats import Stage
 
 def extract_stage_info(race, year):
     stages_info = []
-    for stage_number in range(1, 22):
-        url = f"https://www.procyclingstats.com/race/{race}/{year}/stage-{stage_number}"
-        stage_info_raw = Stage(url)
+    stage_number = 1
+    max_stages = 30
+
+    while stage_number <= max_stages:
         
         try:
+            url = f"https://www.procyclingstats.com/race/{race}/{year}/stage-{stage_number}"
+            stage_info_raw = Stage(url)
+
             date = stage_info_raw.date()
             departure = stage_info_raw.departure()
             arrival = stage_info_raw.arrival()
@@ -24,12 +28,15 @@ def extract_stage_info(race, year):
             }
 
             stages_info.append(stage_info)
+            stage_number += 1
 
         except Exception as e:
-            print(f"Error scraping stage {stage_number}: {e}")
-            continue
-
+            print(f"Stopped extracting at stage {stage_number} Reason: {e}")
+            break
+    
     return stages_info
+            
+    
 
 
 def extract_stage_results(race, year, stage_number):

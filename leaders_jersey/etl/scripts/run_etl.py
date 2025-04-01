@@ -16,7 +16,7 @@ from ..load.load_stage_info import load_stage_info, load_stage_results
 
 
 
-race = "giro-d-italia"
+race = "international-tour-of-hellas"
 year = 2025
 
 '''
@@ -28,6 +28,9 @@ load_startlist(startlist_df)
 
 
 raw_stage_data = extract_stage_info(race, year)
+print("Extracted stage info:")
+for stage in raw_stage_data:
+    print(stage)
 stage_info = transform_stage_info(raw_stage_data, race, year)
 print(stage_info.head())
 load_stage_info(stage_info)

@@ -204,16 +204,11 @@ def save_selection(request, stage_id):
     return redirect('rider_selection')
 
 
-
 @login_required
 def leaderboard(request):
-    # Get the current race (latest year)
     current_race = Race.objects.order_by('-year').first()
-
-    # Get the stages for the current race
     stages = Stage.objects.filter(race=current_race)
 
-    # Get all users who made selections for those stages
     users_with_selections = User.objects.filter(
         selections__stage__in=stages
     ).distinct()
@@ -223,32 +218,60 @@ def leaderboard(request):
     for user in users_with_selections:
         total_time = timedelta(0)
 
-        # Get only this user's stage selections for the current race
+        # Get selections and backup for this user
         selections = PlayerSelection.objects.filter(
             player=user,
             stage__in=stages
         ).select_related('stage', 'rider')
 
-        for selection in selections:
-            try:
-                result = StageResult.objects.get(stage=selection.stage, rider=selection.rider)
-                total_time += result.finishing_time - result.bonus
-            except StageResult.DoesNotExist:
-                continue
+        backup_selection = PlayerSelection.objects.filter(player=user, stage=None).first()
+        backup_rider = backup_selection.rider if backup_selection else None
+
+        # Lookup per stage
+        stage_lookup = {s.stage_id: s for s in selections}
+
+        for stage in stages:
+            result = None
+            used_fallback = False
+
+            # 1. Check selected rider
+            selection = stage_lookup.get(stage.id)
+            if selection and selection.rider:
+                try:
+                    result = StageResult.objects.get(stage=stage, rider=selection.rider)
+                except StageResult.DoesNotExist:
+                    result = None
+
+            # 2. Check backup rider
+            if not result and backup_rider:
+                try:
+                    result = StageResult.objects.get(stage=stage, rider=backup_rider)
+                except StageResult.DoesNotExist:
+                    result = None
+
+            # 3. Fallback: last classified finisher
+            if not result:
+                result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
+                used_fallback = True
+
+            # 4. Add time
+            if result:
+                if used_fallback:
+                    total_time += result.finishing_time  # no bonus
+                else:
+                    total_time += result.finishing_time - result.bonus
 
         leaderboard_data.append({
             'player': user,
             'total_time': total_time,
-            'num_selections': len(selections)
+            'num_selections': selections.count()
         })
 
-    # Sort by total time
     leaderboard_data.sort(key=lambda x: x['total_time'])
 
     return render(request, 'leaderboard.html', {
         'leaderboard_data': leaderboard_data
     })
-
 
 
 @require_POST
