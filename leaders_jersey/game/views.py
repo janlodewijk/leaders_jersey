@@ -55,7 +55,17 @@ def rider_selection(request):
         stages = Stage.objects.filter(race=current_race).order_by('stage_date', 'stage_number')
     else:
         stages = []
+    
+    # Define selection limit per rider
+    race_length = len(stages)
 
+    if race_length <= 8:
+        rider_limit = 1
+    elif race_length <= 14:
+        rider_limit = 2
+    else:
+        rider_limit = 3
+    
     # Get all riders to show in the dropdown
     riders = Rider.objects.filter(is_participating=True).order_by('rider_name')
 
@@ -75,6 +85,13 @@ def rider_selection(request):
         player=request.user,
         stage__in=stages
     ).select_related('stage', 'rider')
+
+    # Count number of times a rider is selected:
+    rider_usage = {}
+    for selection in player_selections:
+        if selection.rider:
+            rider_id = selection.rider.id
+            rider_usage[rider_id] = rider_usage.get(rider_id, 0) + 1
 
     # Get all selected stage rider IDs
     selected_stage_rider_ids = set(sel.rider.id for sel in player_selections if sel.rider and sel.stage is not None)
@@ -171,6 +188,8 @@ def rider_selection(request):
         'backup_locked': backup_locked,
         'backup_riders': riders.exclude(id__in=selected_stage_rider_ids),
         'dnf_riders': dnf_riders,
+        'rider_usage': rider_usage,
+        'rider_limit': rider_limit,
     })
 
 
