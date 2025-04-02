@@ -44,6 +44,7 @@
         {% endif %}
     </div>
     <hr>
+    <h4><strong>In this table, select one rider per stage. For the whole race, a rider can be selected {{ rider_limit}} time{{ rider_limit|pluralize }}.</strong></h4>
     <table>
         <thead>
             <tr>
@@ -55,7 +56,7 @@
                 <th>Your Rider</th>
                 <th>Finishing Time</th>
                 <th>Bonus</th>
-                <th>Source</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -133,7 +134,7 @@
                         {% elif item.used_backup %}
                             Backup
                         {% elif item.selection %}
-                            Selection 
+                             
                         {% else %}
                             -
                         {% endif %}                        

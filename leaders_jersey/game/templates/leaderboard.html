@@ -1,29 +1,63 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>GC Leaderboard</h2>
+<h2>GC Leaderboard</h2>
+
+<div style="display: flex; gap: 40px; align-items: flex-start;">
+
+  <!-- 🎮 Fantasy Leaderboard -->
+  <div>
+    <h3>Game GC</h3>
     <table>
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Player</th>
-                <th>Selections</th>
-                <th>Total Time</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for entry in leaderboard_data %}
-                <tr {% if entry.player == request.user %}style="font-weight: bold;"{% endif %}>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ entry.player.username}}</td>
-                    <td>{{ entry.num_selections }}</td>
-                    <td>{{ entry.total_time }}</td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="4">No player data available yet.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Player</th>
+          <th>Total Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in leaderboard_data %}
+          <tr {% if entry.player == request.user %}style="font-weight: bold;"{% endif %}>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ entry.player.username }}</td>
+            <td>{{ entry.total_time }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4">No player data available yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
     </table>
+  </div>
+
+  <!-- 🏁 Real GC Standings -->
+  <div>
+    <h3>Actual GC Top 10</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Rider</th>
+          <th>Team</th>
+          <th>GC Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rider in gc_data %}
+          <tr>
+            <td>{{ rider.gc_rank }}</td>
+            <td>{{ rider.name }}</td>
+            <td>{{ rider.team }}</td>
+            <td>{{ rider.gc_time }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4">No GC data available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
 {% endblock %}

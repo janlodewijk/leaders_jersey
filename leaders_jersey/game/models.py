@@ -62,6 +62,11 @@ class StageResult(models.Model):
     finishing_time = models.DurationField(null=True, blank=True)
     ranking = models.PositiveSmallIntegerField()
     bonus = models.DurationField(default=timedelta(seconds=0))
+    gc_time = models.DurationField(null=True, blank=True)
+    gc_rank = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.stage} - {self.rider}"
 
 
 class PlayerSelection(models.Model):
