@@ -14,4 +14,4 @@ class ETLRun(models.Model):
     executed_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.get_etl_type_display()} - {self.race.name} ({self.race.year})"
+        return f"{self.get_etl_type_display()} - {self.race.race_name} ({self.race.year})"

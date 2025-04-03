@@ -130,7 +130,7 @@ LOGIN_REDIRECT_URL = '/profile/'
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
-SESSION_COOKIE_AGE = 900   # = 15 minutes
+SESSION_COOKIE_AGE = 3600   # = 1 hour
 
 LOGIN_URL = '/login/'
 
