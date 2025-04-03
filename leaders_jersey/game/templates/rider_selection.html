@@ -68,7 +68,8 @@
                     <td>{{ item.stage.stage_type }}</td>
                     <td>
                         {% if not item.locked %}
-                            <span id="countdown-stage-{{ item.stage.stage_number }}" data-deadline="{{ item.deadline }}"></span>
+                            {{ item.deadline|date:"j M H:i" }}
+                            (<span id="countdown-stage-{{ item.stage.stage_number }}" data-deadline="{{ item.deadline|date:"c" }}"></span>)
                         {% else %}
                             Locked
                         {% endif %}

@@ -34,7 +34,8 @@ print(stage_info.head())
 load_stage_info(stage_info)
 '''
 
-
+'''
 raw_results = extract_stage_results(race, year, stage)
 trans_results = transform_stage_results(raw_results, race, year, stage)
 load_stage_results(trans_results)
+'''

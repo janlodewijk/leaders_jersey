@@ -88,3 +88,5 @@ class PlayerSelection(models.Model):
             return f"{self.player.username} - Stage {self.stage.stage_number}: {self.rider.rider_name}"
         else:
             return f"{self.player.username} - Backup rider: {self.rider.rider_name}"
+        
+

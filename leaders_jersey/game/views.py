@@ -176,7 +176,8 @@ def rider_selection(request):
             'result': result,
             'riders': riders.exclude(id=backup_rider_id) if backup_rider_id else riders,
             'sorted_riders': sorted_riders,
-            'deadline': deadline_iso,
+            'deadline': deadline,
+            'deadline_iso': deadline_iso,
             'used_backup': used_backup,
             'used_fallback': used_fallback,
             'result_source': result_source
