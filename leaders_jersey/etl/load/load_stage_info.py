@@ -53,6 +53,8 @@ def load_stage_results(transformed_stage_results):
         finishing_time = row['finishing_time']
         ranking = row['ranking']
         bonus = row['bonus']
+        gc_rank = row.get('gc_rank')
+        gc_time = row.get('gc_time')
 
         try:
             race_obj = Race.objects.get(url_reference=race, year=year)
@@ -72,6 +74,11 @@ def load_stage_results(transformed_stage_results):
             print(f"Rider {external_id} not found. Skipping.")
             continue
 
+        ranking = None if pd.isna(ranking) else ranking
+        gc_rank = None if pd.isna(gc_rank) else gc_rank
+        gc_time = None if pd.isna(gc_time) else gc_time
+
+
         # Get or create the StageResult
         result_obj, created = StageResult.objects.get_or_create(
             stage=stage_obj,
@@ -87,6 +94,8 @@ def load_stage_results(transformed_stage_results):
             result_obj.finishing_time = finishing_time
             result_obj.ranking = ranking
             result_obj.bonus = bonus
+            result_obj.gc_rank = gc_rank
+            result_obj.gc_time = gc_time
             result_obj.save()
 
 

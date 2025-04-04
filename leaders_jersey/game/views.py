@@ -225,35 +225,53 @@ def save_selection(request, stage_id):
     return redirect('rider_selection')
 
 
+from datetime import timedelta
+
 @login_required
 def leaderboard(request):
     current_race = Race.objects.order_by('-year').first()
     stages = Stage.objects.filter(race=current_race)
 
-    # Get the most recent stage
-    most_recent_stage = stages.order_by('-stage_number').first()
-    if not most_recent_stage:
-        return render(request, 'leaderboard.html', {
-            'leaderboard_data': [],
-            'gc_data': [],
-        })
+    # Get the latest stage that has GC data
+    stages_with_gc = StageResult.objects.filter(
+        stage__in=stages,
+        gc_rank__isnull=False
+    ).values('stage').distinct()
+
+    if stages_with_gc:
+        latest_stage_with_gc_id = max(stage['stage'] for stage in stages_with_gc)
+        most_recent_stage = Stage.objects.get(id=latest_stage_with_gc_id)
+    else:
+        most_recent_stage = None
 
     # Get top 10 GC riders after that stage
-    top_10_riders = StageResult.objects.filter(stage=most_recent_stage).select_related('rider').order_by('gc_rank')[:10]
+    top_10_riders = StageResult.objects.filter(
+        stage=most_recent_stage,
+        gc_rank__isnull=False
+    ).order_by('gc_rank')[:10]
 
-    # Collect GC data for display
+    # ✅ Collect GC data for display (with pretty formatting!)
     gc_data = []
     for result in top_10_riders:
-        gc_rider_data ={
+        if result.gc_time:
+            total_seconds = result.gc_time.total_seconds()
+            hours = int(total_seconds // 3600)
+            minutes = int((total_seconds % 3600) % 60)
+            seconds = int(total_seconds % 60)
+            formatted_gc_time = f"{hours}:{minutes}:{seconds}"
+        else:
+            formatted_gc_time = "-"
+
+        gc_rider_data = {
             'name': result.rider.rider_name,
             'team': result.rider.team,
-            'gc_time': result.gc_time,
+            'gc_time': formatted_gc_time,  # use formatted value!
             'gc_rank': result.gc_rank,
         }
 
         gc_data.append(gc_rider_data)
-        
 
+    # 🎮 Game leaderboard
     users_with_selections = User.objects.filter(
         selections__stage__in=stages
     ).distinct()
@@ -305,10 +323,15 @@ def leaderboard(request):
                     total_time += result.finishing_time  # no bonus
                 else:
                     total_time += result.finishing_time - result.bonus
+        total_seconds = total_time.total_seconds()
+        hours = int(total_seconds // 3600)
+        minutes = int((total_seconds % 3600) // 60)
+        seconds = int(total_seconds % 60)
+        formatted_total_time = f"{hours}:{minutes:02}:{seconds:02}"
 
         leaderboard_data.append({
             'player': user,
-            'total_time': total_time,
+            'total_time': formatted_total_time,
             'num_selections': selections.count()
         })
 
@@ -318,6 +341,7 @@ def leaderboard(request):
         'leaderboard_data': leaderboard_data,
         'gc_data': gc_data,
     })
+
 
 
 @require_POST

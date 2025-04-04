@@ -51,11 +51,8 @@ def transform_stage_results(raw_stage_info, race, year, stage_number):
     stage_results_df = pd.DataFrame(stage_results)
 
     # Convert ranking and gc_rank columns to nullable integers
-    stage_results_df['ranking'] = stage_results_df['ranking'].astype("Int64")
-    stage_results_df['gc_rank'] = stage_results_df['gc_rank'].astype("Int64")
-
-    stage_results_df = stage_results_df.where(pd.notnull(stage_results_df), None)
-
+    stage_results_df['ranking'] = stage_results_df['ranking'].where(stage_results_df['ranking'].notna(), None).astype('Int64')
+    stage_results_df['gc_rank'] = stage_results_df['gc_rank'].where(stage_results_df['gc_rank'].notna(), None).astype('Int64')
 
 
     return stage_results_df
