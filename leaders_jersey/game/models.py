@@ -57,13 +57,13 @@ class Rider(models.Model):
 
 
 class StageResult(models.Model):
-    stage = models.ForeignKey(Stage, on_delete=models.CASCADE, related_name='results')
+    stage = models.ForeignKey(Stage, on_delete=models.SET_NULL, related_name='results', null=True, blank=True)
     rider = models.ForeignKey(Rider, on_delete=models.CASCADE, related_name='stage_results')
     finishing_time = models.DurationField(null=True, blank=True)
-    ranking = models.PositiveSmallIntegerField()
+    ranking = models.PositiveSmallIntegerField(null=True, blank=True)
     bonus = models.DurationField(default=timedelta(seconds=0))
     gc_time = models.DurationField(null=True, blank=True)
-    gc_rank = models.IntegerField(null=True, blank=True)
+    gc_rank = models.PositiveSmallIntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.stage} - {self.rider}"

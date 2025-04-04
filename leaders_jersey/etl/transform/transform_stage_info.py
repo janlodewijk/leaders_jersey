@@ -1,8 +1,8 @@
 import pandas as pd
 
-def transform_stage_info(raw_stage_info, race, year):
+def transform_stage_info(raw_stage_info):
     stage_info = pd.DataFrame(raw_stage_info)
-    stage_info['stage_type'] = 'Manually'
+    stage_info['stage_type'] = '-'
 
     return stage_info
 
@@ -51,8 +51,12 @@ def transform_stage_results(raw_stage_info, race, year, stage_number):
     stage_results_df = pd.DataFrame(stage_results)
 
     # Convert ranking and gc_rank columns to nullable integers
-    stage_results_df['ranking'] = stage_results_df['ranking'].astype(pd.Int64Dtype())
-    stage_results_df['gc_rank'] = stage_results_df['gc_rank'].astype(pd.Int64Dtype())
+    stage_results_df['ranking'] = stage_results_df['ranking'].astype("Int64")
+    stage_results_df['gc_rank'] = stage_results_df['gc_rank'].astype("Int64")
+
+    stage_results_df = stage_results_df.where(pd.notnull(stage_results_df), None)
+
+
 
     return stage_results_df
 

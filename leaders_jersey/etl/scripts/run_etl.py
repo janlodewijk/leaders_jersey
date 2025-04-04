@@ -18,7 +18,7 @@ from ..load.load_stage_info import load_stage_info, load_stage_results
 
 race = "international-tour-of-hellas"
 year = 2025
-stage = 1
+stage = 2
 
 '''
 raw_startlist = extract_startlist(race, year)
@@ -34,8 +34,7 @@ print(stage_info.head())
 load_stage_info(stage_info)
 '''
 
-'''
+
 raw_results = extract_stage_results(race, year, stage)
 trans_results = transform_stage_results(raw_results, race, year, stage)
 load_stage_results(trans_results)
-'''
