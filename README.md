@@ -46,10 +46,10 @@ The player with the lowest total GC time at the end of the race wins! 🏆
 ## 🚀 Getting Started
 
 1. Clone the repo  
-   '''
+   ```
    git clone https://github.com/yourusername/leaders-jersey.git
    cd leaders-jersey
-   '''
+   ```
 
 2. Set up a virtual environment
 
