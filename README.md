@@ -95,24 +95,35 @@ README.md
 requirements.txt
 ```
 
+## 🔄 Running the ETL Process
+
+You can trigger the ETL pipelines from the Django Admin panel:
+
+- Go to Admin → ETL → ETL Runs → Add
+- Select the race, stage, and ETL type (startlist, stage info, stage results)
+- Click "Run ETL" to fetch and load the data automatically.
+
+
 🗺️ **Roadmap**
 
-🟢 Add form validation & improved UX
+    🟢 Add form validation & improved UX
 
-🟢 Add real GC comparison + highlight if user beats it
+    🟢 Add real GC comparison + highlight if user beats it
 
-🔜 Deploy to the web (Render or Railway)
+    🔜 Deploy to the web (Render or Railway)
 
-🔜 Mobile layout improvements
+    🔜 Mobile layout improvements
 
-🔜 Email notifications (optional)
+    🔜 Email notifications (optional)
 
-🙌 **Credits**
+**Credits**
 
-Built with ❤️ by Jan Lodewijk Eshuis
-Data provided by ProCyclingStats.com
+    Built with ❤️ by Jan Lodewijk Eshuis
+    Data provided by ProCyclingStats.com
 
-© 2025 Jan Lodewijk Eshuis. All rights reserved.
+**Licence**
 
-This project is intended for demonstration and private testing purposes only. 
-Unauthorized copying, modification, or distribution is prohibited without written permission.
+    © 2025 Jan Lodewijk Eshuis. All rights reserved.
+
+    This project is intended for demonstration and private testing purposes only. 
+    Unauthorized copying, modification, or distribution is prohibited without written permission.
