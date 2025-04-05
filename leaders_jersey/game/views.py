@@ -324,10 +324,14 @@ def leaderboard(request):
                 else:
                     total_time += result.finishing_time - result.bonus
         total_seconds = total_time.total_seconds()
-        hours = int(total_seconds // 3600)
-        minutes = int((total_seconds % 3600) // 60)
-        seconds = int(total_seconds % 60)
-        formatted_total_time = f"{hours}:{minutes:02}:{seconds:02}"
+
+        if total_seconds > 0:
+            hours = int(total_seconds // 3600)
+            minutes = int((total_seconds % 3600) // 60)
+            seconds = int(total_seconds % 60)
+            formatted_total_time = f"{hours}:{minutes:02}:{seconds:02}"
+        else:
+            formatted_total_time = "0:00:00"
 
         leaderboard_data.append({
             'player': user,
