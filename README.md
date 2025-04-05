@@ -46,14 +46,17 @@ The player with the lowest total GC time at the end of the race wins! 🏆
 ## 🚀 Getting Started
 
 1. Clone the repo  
- 
+   '''
    git clone https://github.com/yourusername/leaders-jersey.git
    cd leaders-jersey
+   '''
 
 2. Set up a virtual environment
 
+    '''
     python -m venv venv
     source venv/bin/activate  # or venv\Scripts\activate on Windows
+    '''
 
 3. Install dependencies
 
@@ -109,3 +112,8 @@ requirements.txt
 
 Built with ❤️ by Jan Lodewijk Eshuis
 Data provided by ProCyclingStats.com
+
+© 2025 Jan Lodewijk Eshuis. All rights reserved.
+
+This project is intended for demonstration and private testing purposes only. 
+Unauthorized copying, modification, or distribution is prohibited without written permission.
