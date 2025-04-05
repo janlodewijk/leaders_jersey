@@ -1,0 +1,66 @@
+/* === Base Styles === */
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #fff0f5; /* Light Giro pink */
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+/* === Headers === */
+h1, h2, h3 {
+    color: #d63384; /* Stronger Giro pink */
+    text-align: center;
+}
+
+/* === Tables === */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    background: white;
+}
+
+th, td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+
+th {
+    background-color: #f8d7e6; /* Soft pink background */
+    color: #333;
+}
+
+/* === Buttons === */
+button, .button {
+    background-color: #d63384;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin-top: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover, .button:hover {
+    background-color: #c2185b;
+}
+
+/* === Form Selects === */
+select {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+/* === Special Styles === */
+.locked {
+    color: grey;
+    font-style: italic;
+}
+
+.canceled {
+    color: red;
+    font-weight: bold;
+}
