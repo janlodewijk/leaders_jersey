@@ -52,29 +52,28 @@ The player with the lowest total GC time at the end of the race wins! 🏆
    ```
 
 2. Set up a virtual environment
-
-    '''
+    ```
     python -m venv venv
     source venv/bin/activate  # or venv\Scripts\activate on Windows
-    '''
+    ```
 
 3. Install dependencies
-
+    ```
     pip install -r requirements.txt
-
+    ```
 4. Run migrations & create superuser
-
+    ```
     python manage.py migrate
     python manage.py createsuperuser
-
+    ```
 5. Start the development server
-
+    ```
     python manage.py runserver
-
+    ```
 6. Visit http://127.0.0.1:8000 in your browser
 
 🛠️ **Project Structure**
-
+```
 leaders_jersey/
 ├── etl/                   # ETL pipeline (extract, transform, load scripts)
 ├── game/                  # Main Django app
@@ -94,7 +93,7 @@ venv/                      # Python virtual environment
 .gitignore
 README.md
 requirements.txt
-
+```
 
 🗺️ **Roadmap**
 
