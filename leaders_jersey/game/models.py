@@ -32,6 +32,7 @@ class Stage(models.Model):
     distance = models.PositiveSmallIntegerField(null=True)
     stage_type = models.CharField(max_length=30, choices=STAGE_TYPE_CHOICES, null=True, blank=True)     # mountain, sprint, TT etc.
     start_time = models.TimeField(default=time(12,0))
+    is_canceled = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('race', 'stage_number')  # prevents duplicate stage numbers per race

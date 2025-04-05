@@ -14,8 +14,8 @@ class RiderAdmin(admin.ModelAdmin):
 
 @admin.register(Stage)
 class StageAdmin(admin.ModelAdmin):
-    list_display = ('race', 'stage_number', 'stage_date', 'start_time', 'departure', 'arrival', 'distance', 'stage_type')
-    list_filter = ('race',)
+    list_display = ('race', 'stage_number', 'stage_date', 'start_time', 'departure', 'arrival', 'distance', 'stage_type', 'is_canceled')
+    list_filter = ('race', 'is_canceled')
     ordering = ('race', 'stage_number')    
 
 @admin.register(StageResult)

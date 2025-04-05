@@ -1,5 +1,7 @@
 import pandas as pd
 from game.models import Race, Stage, Rider, StageResult
+from datetime import timedelta
+
 
 def load_stage_info(transformed_stage_info):
     for index, row in transformed_stage_info.iterrows():
@@ -44,6 +46,8 @@ def load_stage_info(transformed_stage_info):
             stage_obj.save()
 
 
+from datetime import timedelta
+
 def load_stage_results(transformed_stage_results):
     for index, row in transformed_stage_results.iterrows():
         race = row['race']
@@ -74,19 +78,23 @@ def load_stage_results(transformed_stage_results):
             print(f"Rider {external_id} not found. Skipping.")
             continue
 
+        # ✅ CONVERT EVERYTHING PROPERLY
+        finishing_time = None if pd.isna(finishing_time) else timedelta(seconds=finishing_time.total_seconds())
+        bonus = None if pd.isna(bonus) else timedelta(seconds=bonus.total_seconds())
         ranking = None if pd.isna(ranking) else ranking
         gc_rank = None if pd.isna(gc_rank) else gc_rank
-        gc_time = None if pd.isna(gc_time) else gc_time
+        gc_time = None if pd.isna(gc_time) else timedelta(seconds=gc_time.total_seconds())
 
-
-        # Get or create the StageResult
+        # Save
         result_obj, created = StageResult.objects.get_or_create(
             stage=stage_obj,
             rider=rider_obj,
             defaults={
                 'finishing_time': finishing_time,
                 'ranking': ranking,
-                'bonus': bonus
+                'bonus': bonus,
+                'gc_rank': gc_rank,
+                'gc_time': gc_time
             }
         )
 
@@ -97,5 +105,3 @@ def load_stage_results(transformed_stage_results):
             result_obj.gc_rank = gc_rank
             result_obj.gc_time = gc_time
             result_obj.save()
-
-

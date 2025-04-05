@@ -54,6 +54,6 @@ def transform_stage_results(raw_stage_info, race, year, stage_number):
     stage_results_df['ranking'] = stage_results_df['ranking'].where(stage_results_df['ranking'].notna(), None).astype('Int64')
     stage_results_df['gc_rank'] = stage_results_df['gc_rank'].where(stage_results_df['gc_rank'].notna(), None).astype('Int64')
 
-
+    print(stage_results_df.head())
     return stage_results_df
 

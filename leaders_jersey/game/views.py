@@ -84,7 +84,8 @@ def rider_selection(request):
     # Get all PlayerSelections for this user and race
     player_selections = PlayerSelection.objects.filter(
         player=request.user,
-        stage__in=stages
+        stage__in=stages,
+        stage__is_canceled=False
     ).select_related('stage', 'rider')
 
     # Count number of times a rider is selected:
@@ -146,7 +147,7 @@ def rider_selection(request):
                 result = None
 
         # Try backup rider if main rider has no result
-        if not result and backup_selection and backup_selection.rider:
+        if not result and selection and backup_selection and backup_selection.rider:
             try:
                 result = StageResult.objects.get(stage=stage, rider=backup_selection.rider)
                 used_backup = True
@@ -180,7 +181,8 @@ def rider_selection(request):
             'deadline_iso': deadline_iso,
             'used_backup': used_backup,
             'used_fallback': used_fallback,
-            'result_source': result_source
+            'result_source': result_source,
+            'is_canceled': stage.is_canceled,
         })
 
     return render(request, 'rider_selection.html', {
@@ -256,9 +258,9 @@ def leaderboard(request):
         if result.gc_time:
             total_seconds = result.gc_time.total_seconds()
             hours = int(total_seconds // 3600)
-            minutes = int((total_seconds % 3600) % 60)
+            minutes = int((total_seconds % 3600) // 60)
             seconds = int(total_seconds % 60)
-            formatted_gc_time = f"{hours}:{minutes}:{seconds}"
+            formatted_gc_time = f"{hours}:{minutes:02}:{seconds:02}"
         else:
             formatted_gc_time = "-"
 

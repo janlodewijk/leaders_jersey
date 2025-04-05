@@ -44,7 +44,7 @@
         {% endif %}
     </div>
     <hr>
-    <h4><strong>In this table, select one rider per stage. For the whole race, a rider can be selected {{ rider_limit}} time{{ rider_limit|pluralize }}.</strong></h4>
+    <h4><strong>In this table, select one rider per stage. For the whole race, a rider can be selected {{ rider_limit}} time{{ rider_limit|pluralize }}. If you don't select a rider, you'll get the time of the last finisher (!)</strong></h4>
     <table>
         <thead>
             <tr>
@@ -75,7 +75,9 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if item.locked %}
+                        {% if item.is_canceled %}
+                            <span style="color: red;">STAGE CANCELED</span>
+                        {% elif item.locked %}
                             {% if item.selection %}
                                 {{ item.selection.rider_name }}
                             {% else %}
