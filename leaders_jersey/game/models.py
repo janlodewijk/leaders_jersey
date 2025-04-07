@@ -5,7 +5,7 @@ from datetime import timedelta, time
 
 class Race(models.Model):
     race_name = models.CharField(max_length=100)
-    year = models.PositiveSmallIntegerField()
+    year = models.PositiveSmallIntegerField(default=2025)
     start_date = models.DateField()
     end_date = models.DateField()
     url_reference = models.CharField(max_length=50, null=True, blank=True)
@@ -58,7 +58,7 @@ class Rider(models.Model):
 
 
 class StageResult(models.Model):
-    stage = models.ForeignKey(Stage, on_delete=models.SET_NULL, related_name='results', null=True, blank=True)
+    stage = models.ForeignKey(Stage, on_delete=models.CASCADE, related_name='results', null=True, blank=True)
     rider = models.ForeignKey(Rider, on_delete=models.CASCADE, related_name='stage_results')
     finishing_time = models.DurationField(null=True, blank=True)
     ranking = models.PositiveSmallIntegerField(null=True, blank=True)
