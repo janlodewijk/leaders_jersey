@@ -87,3 +87,59 @@ select {
     color: red;
     font-weight: bold;
 }
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+  }
+  
+  .modal-content {
+    background-color: #fff0f5;
+    margin: 10% auto;
+    padding: 20px;
+    border: 2px solid #d63384;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  
+  .close {
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .modal-nav {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #d63384;
+    cursor: pointer;
+  }
+  
+  #riderList li {
+    list-style: none;
+    margin: 10px 0;
+    cursor: pointer;
+  }
+  
+  #riderList li.disabled {
+    color: grey;
+    cursor: not-allowed;
+  }
+  

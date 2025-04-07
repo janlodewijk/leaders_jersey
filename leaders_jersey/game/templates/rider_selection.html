@@ -2,148 +2,121 @@
 {% load custom_filters %}
 
 {% block content %}
-    <h2>Rider Selection</h2>
-    <h3><strong>Your personal Total GC Time:</strong>  {{ total_gc_time }}</h3>
-    <div style="border: 2px solid #ccc; padding: 1em; margin-bottom: 2em; border-radius: 8px; background-color: #f9f9f9; max-width: 600px; margin: 0 auto;">
-        <h3>Backup Rider</h3>
-        <p>If the rider you've selected for a stage (in the table below) does not finish the stage, you will get the time of your backup rider.<br>
-            <strong>Attention:</strong>
-            <br>- You can select only one backup rider for the whole grand tour (only in case of a DNF, you can select a new one)<br>
-            - You <strong>cannot</strong> select this rider for your stages (and vice versa)
-        </p>
-        {% if backup_selection and backup_selection.rider.id in dnf_riders %}
-            <p style="color:red;"><strong>Warning:</strong> Your backup rider did not finish and should be replaced.</p>
-        {% endif %}
-        {% if backup_locked %}
-            {% if backup_selection %}
-                <p><strong>Your backup rider:</strong> {{ backup_selection.rider.rider_name }} ({{ backup_selection.rider.team }})</p>
-            {% else %}
-                <p><strong>No backup rider selected</strong></p>
-            {% endif %}
+<h2>Rider Selection</h2>
+
+<h3><strong>Your personal Total GC Time:</strong> {{ total_gc_time }}</h3>
+
+<div style="border: 2px solid #ccc; padding: 1em; margin-bottom: 2em; border-radius: 8px; background-color: #f9f9f9; max-width: 600px; margin: 0 auto;">
+    <h3>Backup Rider</h3>
+    <p>If the rider you've selected for a stage (in the table below) does not finish the stage, you will get the time of your backup rider.<br>
+        <strong>Attention:</strong><br>
+        - You can select only one backup rider for the whole grand tour (only in case of a DNF, you can select a new one).<br>
+        - You <strong>cannot</strong> select this rider for your stages (and vice versa).
+    </p>
+
+    {% if backup_selection and backup_selection.rider.id in dnf_riders %}
+        <p style="color:red;"><strong>Warning:</strong> Your backup rider did not finish and should be replaced.</p>
+    {% endif %}
+
+    {% if backup_locked %}
+        {% if backup_selection %}
+            <p><strong>Backup Rider:</strong> {{ backup_selection.rider.rider_name }}</p>
         {% else %}
-            <form method="post" action="{% url 'save_backup_selection' %}">
-                {% csrf_token %}
-                <label for="backup_rider">Choose your backup rider:</label>
-                <select name="rider_id" id="backup_rider">
-                    <option value="">-- Select Rider --</option>
-                    {% for rider in backup_riders %}
-                        {% if rider.id in dnf_riders %}
-                            <option value="{{ rider.id }}" disabled>
-                                {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }}) - DNF
-                            </option>
-                        {% else %}
-                            <option value="{{ rider.id}}"
-                                {% if backup_selection and rider.id == backup_selection.rider.id %}selected{% endif %}>
-                                {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }})
-                            </option>
-                        {% endif %}
-                    {% endfor %}
-                </select>
-                <button type="submit">Save Backup</button>            
-            </form>
+            <p>No backup rider selected.</p>
         {% endif %}
-    </div>
-    <hr>
-    <h4><strong>In this table, select one rider per stage. For the whole race, a rider can be selected {{ rider_limit}} time{{ rider_limit|pluralize }}. If you don't select a rider, you'll get the time of the last finisher (!)</strong></h4>
-    <table>
-        <thead>
-            <tr>
-                <th>Stage</th>
-                <th>Route</th>
-                <th>Distance</th>
-                <th>Type</th>
-                <th>Deadline</th>
-                <th>Your Rider</th>
-                <th>Finishing Time</th>
-                <th>Bonus</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in stage_data %}
-                <tr>
-                    <td>Stage {{ item.stage.stage_number }}</td>
-                    <td>{{ item.stage.departure }} - {{ item.stage.arrival }}</td>
-                    <td>{{ item.stage.distance }} km</td>
-                    <td>{{ item.stage.stage_type }}</td>
-                    <td>
-                        {% if not item.locked %}
-                            {{ item.deadline|date:"j M H:i" }}
-                            (<span id="countdown-stage-{{ item.stage.stage_number }}" data-deadline="{{ item.deadline|date:"c" }}"></span>)
-                        {% else %}
-                            Locked
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if item.is_canceled %}
-                            <span style="color: red;">STAGE CANCELED</span>
-                        {% elif item.locked %}
-                            {% if item.selection %}
-                                {{ item.selection.rider_name }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        {% else %}
-                            <form method="post" action="{% url 'save_selection' item.stage.id %}">
-                                {% csrf_token %}
-                                <select name="rider_id">
-                                    <option value="">-- Select Rider --</option>
-                                    {% for rider in item.sorted_riders %}
-                                        {% with usage=rider_usage|get_item:rider.id %}
-                                            {% if rider.id in dnf_riders %}
-                                                <option value="{{ rider.id }}" disabled>
-                                                    {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }}) – DNF
-                                                </option>
-                                            {% elif usage and usage >= rider_limit %}
-                                                {% if item.selection and rider.id == item.selection.id %}
-                                                    <option value="{{ rider.id }}" selected>
-                                                        {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }})
-                                                    </option>
-                                                {% else %}
-                                                    <option value="{{ rider.id }}" disabled>
-                                                        {{ rider.start_number }} - {{ rider.rider_name }} – Selection limit reached
-                                                    </option>
-                                                {% endif %}
-                                            {% else %}
-                                                <option value="{{ rider.id }}"
-                                                    {% if item.selection and rider.id == item.selection.id %}selected{% endif %}>
-                                                    {{ rider.start_number }} - {{ rider.rider_name }} ({{ rider.team }})
-                                                </option>
-                                            {% endif %}
-                                        {% endwith %}
-                                    {% endfor %}
-                                </select>
-                                <button type="submit">Save</button>
-                            </form>
-                        {% endif %}
-                    </td>                  
-                    <td>
-                        {% if item.result %}
-                            {{ item.result.finishing_time }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if item.result %}
-                            {{ item.result.bonus }}
-                        {% else %}
-                            -
-                        {% endif %}                            
-                    </td>
-                    <td>
-                        {% if item.used_fallback %}
-                            Last finisher
-                        {% elif item.used_backup %}
-                            Backup
-                        {% elif item.selection %}
-                             
-                        {% else %}
-                            -
-                        {% endif %}                        
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% else %}
+        {% if backup_selection %}
+            <p><strong>Backup Rider:</strong> {{ backup_selection.rider.rider_name }}</p>
+            <button type="button" class="button open-modal-button" data-stage-id="">Change Backup Rider</button>
+        {% else %}
+            <button type="button" class="button open-modal-button" data-stage-id="">Select Backup Rider</button>
+        {% endif %}
+    {% endif %}
+</div>
+
+<hr>
+
+<h4><strong>In this table, select one rider per stage.</strong> For the whole race, a rider can be selected {{ rider_limit }} time{{ rider_limit|pluralize }}. If you don't select a rider, you'll get the time of the last finisher (!)</h4>
+
+<table>
+    <thead>
+        <tr>
+            <th>Stage</th>
+            <th>Route</th>
+            <th>Distance</th>
+            <th>Type</th>
+            <th>Deadline</th>
+            <th>Your Rider</th>
+            <th>Finishing Time</th>
+            <th>Bonus</th>
+            <th>Source</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in stage_data %}
+        <tr>
+            <td>Stage {{ item.stage.stage_number }}</td>
+            <td>{{ item.stage.departure }} - {{ item.stage.arrival }}</td>
+            <td>{{ item.stage.distance }} km</td>
+            <td>{{ item.stage.stage_type }}</td>
+            <td>
+                {% if not item.locked %}
+                    <span style="white-space: nowrap;">
+                        {{ item.deadline|date:"j M H:i" }}<br>(⌛ <span id="countdown-stage-{{ item.stage.stage_number }}" data-deadline="{{ item.deadline|date:"c" }}"></span>)
+                    </span>
+                {% else %}
+                    Locked
+                {% endif %}
+            </td>
+            <td>
+                {% if item.is_canceled %}
+                    <span style="color:red;">Stage Canceled</span>
+                {% elif item.locked %}
+                    {% if item.selection %}
+                        {{ item.selection.rider_name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                {% else %}
+                    {% if item.selection %}
+                        {{ item.selection.rider_name }} <br>
+                        <button type="button" class="button open-modal-button" data-stage-id="{{ item.stage.id }}">Change</button>
+                    {% else %}
+                        <button type="button" class="button open-modal-button" data-stage-id="{{ item.stage.id }}">Select Rider</button>
+                    {% endif %}
+                {% endif %}              
+            </td>
+            <td>
+                {% if item.result %}
+                    {{ item.result.finishing_time }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if item.result %}
+                    {{ item.result.bonus }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if item.used_fallback %}
+                    Last finisher
+                {% elif item.used_backup %}
+                    Backup
+                {% elif item.selection %}
+                    Selection
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ backup_riders|json_script:"riders-data" }}
 {% endblock %}

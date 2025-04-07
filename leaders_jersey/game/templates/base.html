@@ -9,44 +9,176 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-    <div class="container">   <!-- 🚀 Start of container -->
+<div class="container">
 
-        <header>
-            <h1>Leader's Jersey</h1>
-            <nav>
-                <a href="/">Home</a>
+    <header>
+        <h1>Leader's Jersey</h1>
+        <nav>
+            <a href="/">Home</a>
 
-                {% if user.is_authenticated %}
-                    <a href="/profile/">Profile</a>
-                    <a href="/rider_selection/">Rider Selection</a>
-                    <a href="/leaderboard/">Leaderboard</a>
-                    <form method="post" action="/logout/" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit">Logout</button>
-                    </form>
-                {% else %}
-                    <a href="/login/">Login</a>
-                    <a href="/register/">Register</a>
-                {% endif %}
-            </nav>
-            <hr>
-        </header>
+            {% if user.is_authenticated %}
+                <a href="/profile/">Profile</a>
+                <a href="/rider_selection/">Rider Selection</a>
+                <a href="/leaderboard/">Leaderboard</a>
+                <form method="post" action="/logout/" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit">Logout</button>
+                </form>
+            {% else %}
+                <a href="/login/">Login</a>
+                <a href="/register/">Register</a>
+            {% endif %}
+        </nav>
+        <hr>
+    </header>
 
-        {% if messages %}
-            <ul>
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+    {% if messages %}
+    <ul>
+        {% for message in messages %}
+        <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 
-        <main>
-            {% block content %}
-            {% endblock %}
-        </main>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
 
-    </div> <!-- 🚀 End of container -->
+</div> <!-- End container -->
 
-    <script src="{% static 'game/countdown.js' %}"></script>
+<!-- 🌟 Modal for Rider Selection -->
+<div id="riderModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h3 id="modal-title">Select a Rider</h3>
+        <div id="rider-list"></div>
+    </div>
+</div>
+
+<!-- Static files -->
+<script src="{% static 'game/countdown.js' %}"></script>
+
+<!-- Riders JSON data -->
+{{ backup_riders|json_script:"riders-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('riderModal');
+    const riderList = document.getElementById('rider-list');
+    const closeButton = document.querySelector('.close-button');
+    const openButtons = document.querySelectorAll('.open-modal-button');
+    let currentStageId = null;
+
+    openButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            currentStageId = this.getAttribute('data-stage-id');
+            modal.style.display = 'block';
+            loadRiders();
+        });
+    });
+
+    closeButton.addEventListener('click', function () {
+        modal.style.display = 'none';
+    });
+
+    window.onclick = function (event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    function loadRiders() {
+        riderList.innerHTML = '';
+
+        const teams = JSON.parse(document.getElementById('riders-data').textContent);
+        const riderLimit = JSON.parse('{{ rider_limit|escapejs }}');   // ← Inserted safely outside string!
+
+        let teamIndex = 0;
+
+        function renderTeam() {
+            riderList.innerHTML = '';
+            const team = teams[teamIndex];
+
+            const teamTitle = document.createElement('h4');
+            teamTitle.textContent = team.team;
+            riderList.appendChild(teamTitle);
+
+            team.riders.forEach(rider => {
+                const riderDiv = document.createElement('div');
+                riderDiv.classList.add('rider-option');
+                riderDiv.style.marginBottom = '8px';
+                riderDiv.style.padding = '5px';
+                riderDiv.style.cursor = 'pointer';
+
+                if (rider.is_dnf || rider.is_backup || rider.selection_count >= riderLimit) {
+                    riderDiv.innerHTML = `${rider.start_number} - ${rider.rider_name} <span style="color:red;">(Unavailable)</span>`;
+                    riderDiv.style.color = 'grey';
+                    riderDiv.style.pointerEvents = 'none';
+                } else {
+                    riderDiv.innerHTML = `${rider.start_number} - ${rider.rider_name}`;
+                    riderDiv.addEventListener('click', function () {
+                        selectRider(rider.id);
+                    });
+                }
+                riderList.appendChild(riderDiv);
+            });
+
+            const navDiv = document.createElement('div');
+            navDiv.style.marginTop = '10px';
+
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '⬅️';
+            prevButton.onclick = function () {
+                teamIndex = (teamIndex - 1 + teams.length) % teams.length;
+                renderTeam();
+            };
+            navDiv.appendChild(prevButton);
+
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '➡️';
+            nextButton.style.marginLeft = '10px';
+            nextButton.onclick = function () {
+                teamIndex = (teamIndex + 1) % teams.length;
+                renderTeam();
+            };
+            navDiv.appendChild(nextButton);
+
+            riderList.appendChild(navDiv);
+        }
+
+        renderTeam();
+    }
+
+    function selectRider(riderId) {
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = window.location.href;
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';  // Safe Django insert
+
+        const riderInput = document.createElement('input');
+        riderInput.type = 'hidden';
+        riderInput.name = 'rider_id';
+        riderInput.value = riderId;
+
+        const stageInput = document.createElement('input');
+        stageInput.type = 'hidden';
+        stageInput.name = 'stage_id';
+        stageInput.value = currentStageId || '';
+
+        form.appendChild(csrfInput);
+        form.appendChild(riderInput);
+        form.appendChild(stageInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+});
+</script>
+
 </body>
 </html>
