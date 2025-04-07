@@ -96,58 +96,73 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let teamIndex = 0;
 
-        function renderTeam() {
-            riderList.innerHTML = '';
-            const team = teams[teamIndex];
+    function renderTeam() {
+        riderList.innerHTML = '';
 
-            const teamTitle = document.createElement('h4');
-            teamTitle.textContent = team.team;
-            riderList.appendChild(teamTitle);
+        const team = teams[teamIndex];
 
-            team.riders.forEach(rider => {
-                const riderDiv = document.createElement('div');
-                riderDiv.classList.add('rider-option');
-                riderDiv.style.marginBottom = '8px';
-                riderDiv.style.padding = '5px';
-                riderDiv.style.cursor = 'pointer';
+        const teamDiv = document.createElement('div');
+        teamDiv.classList.add('team-box');
 
-                if (rider.is_dnf || rider.is_backup || rider.selection_count >= riderLimit) {
-                    riderDiv.innerHTML = `${rider.start_number} - ${rider.rider_name} <span style="color:red;">(Unavailable)</span>`;
-                    riderDiv.style.color = 'grey';
-                    riderDiv.style.pointerEvents = 'none';
-                } else {
-                    riderDiv.innerHTML = `${rider.start_number} - ${rider.rider_name}`;
-                    riderDiv.addEventListener('click', function () {
-                        selectRider(rider.id);
-                    });
-                }
-                riderList.appendChild(riderDiv);
-            });
+        // 🛠 Create header with arrows and title
+        const teamHeader = document.createElement('div');
+        teamHeader.classList.add('team-header');
 
-            const navDiv = document.createElement('div');
-            navDiv.style.marginTop = '10px';
+        const leftArrow = document.createElement('button');
+        leftArrow.textContent = '⬅️';
+        leftArrow.classList.add('arrow-button');
+        leftArrow.addEventListener('click', function () {
+            teamIndex = (teamIndex - 1 + teams.length) % teams.length;
+            renderTeam();
+        });
 
-            const prevButton = document.createElement('button');
-            prevButton.textContent = '⬅️';
-            prevButton.onclick = function () {
-                teamIndex = (teamIndex - 1 + teams.length) % teams.length;
-                renderTeam();
-            };
-            navDiv.appendChild(prevButton);
+        const teamTitle = document.createElement('h4');
+        teamTitle.innerText = team.team;
+        teamTitle.classList.add('team-title');
 
-            const nextButton = document.createElement('button');
-            nextButton.textContent = '➡️';
-            nextButton.style.marginLeft = '10px';
-            nextButton.onclick = function () {
-                teamIndex = (teamIndex + 1) % teams.length;
-                renderTeam();
-            };
-            navDiv.appendChild(nextButton);
+        const rightArrow = document.createElement('button');
+        rightArrow.textContent = '➡️';
+        rightArrow.classList.add('arrow-button');
+        rightArrow.addEventListener('click', function () {
+            teamIndex = (teamIndex + 1) % teams.length;
+            renderTeam();
+        });
 
-            riderList.appendChild(navDiv);
-        }
+        teamHeader.appendChild(leftArrow);
+        teamHeader.appendChild(teamTitle);
+        teamHeader.appendChild(rightArrow);
 
-        renderTeam();
+        teamDiv.appendChild(teamHeader); // add header to the team box
+
+        // 🛠 Rider buttons container
+        const ridersContainer = document.createElement('div');
+        ridersContainer.classList.add('riders-container');
+
+        team.riders.forEach(rider => {
+            const riderButton = document.createElement('button');
+            riderButton.classList.add('rider-button');
+            riderButton.innerText = `${rider.start_number} - ${rider.rider_name}`;
+
+            if (rider.is_dnf || rider.is_unavailable) {
+                riderButton.disabled = true;
+                riderButton.classList.add('disabled');
+            } else {
+                riderButton.addEventListener('click', function () {
+                    selectRider(rider.id);
+                });
+            }
+
+            ridersContainer.appendChild(riderButton);
+        });
+
+        teamDiv.appendChild(ridersContainer);
+
+        riderList.appendChild(teamDiv);
+}
+
+renderTeam(); // call it immediately
+
+
     }
 
     function selectRider(riderId) {

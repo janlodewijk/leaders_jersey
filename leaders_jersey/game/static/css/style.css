@@ -11,9 +11,9 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    background-color: fff0f5;   /* <-- add this */
-    border: 1px solid #ddd;     /* <-- optional: add a light border */
-    border-radius: 10px;        /* <-- optional: make it a bit rounded */
+    background-color: #fff0f5; 
+    border: 1px solid #ddd;
+    border-radius: 10px;
 }
 
 /* === Headers === */
@@ -37,23 +37,22 @@ th, td {
 }
 
 th {
-    background-color: black; /* Soft pink background */
+    background-color: black;
     color: #fff0f5;
 }
 
 /* === Zebra striping for tables === */
 table tbody tr:nth-child(odd) {
-    background-color: #fff0f5; /* Light pink for odd rows */
+    background-color: #fff0f5;
 }
 
 table tbody tr:nth-child(even) {
-    background-color: #ffffff; /* White for even rows */
+    background-color: #ffffff;
 }
 
 table tbody tr:hover {
-    background-color: #ffe6f0; /* Even softer pink on hover */
+    background-color: #ffe6f0;
 }
-
 
 /* === Buttons === */
 button, .button {
@@ -88,6 +87,7 @@ select {
     font-weight: bold;
 }
 
+/* === Modal === */
 .modal {
     display: none;
     position: fixed;
@@ -98,48 +98,104 @@ select {
     height: 100%;
     overflow: auto;
     background-color: rgba(0,0,0,0.5);
-  }
-  
-  .modal-content {
+}
+
+.modal-content {
     background-color: #fff0f5;
-    margin: 10% auto;
+    margin: 5% auto;
     padding: 20px;
     border: 2px solid #d63384;
     width: 80%;
-    max-width: 500px;
-    border-radius: 8px;
-    text-align: center;
-  }
-  
-  .close {
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  
-  .modal-header {
+    max-width: 600px;
+    border-radius: 10px;
+    animation: fadeIn 0.5s ease;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* === Team Popup === */
+.team-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-  }
-  
-  .modal-nav {
-    background: none;
-    border: none;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.team-box {
+    border: 2px solid #d63384;
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #fff0f5;
+    text-align: center;
+}
+
+.team-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0;
+    padding-bottom: 5px;
+    flex-grow: 1;
+    text-align: center;
+    border-bottom: 2px solid #d63384;
+}
+
+.arrow-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 20px;
+}
+
+.arrow-button {
     font-size: 24px;
-    color: #d63384;
+    padding: 5px 10px;
     cursor: pointer;
-  }
-  
-  #riderList li {
-    list-style: none;
-    margin: 10px 0;
+    background-color: #d63384;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    min-width: 40px;
+}
+
+.arrow-button:hover {
+    background-color: #c2185b;
+}
+
+/* === Rider Buttons === */
+.riders-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.rider-button {
+    background-color: #d63384;
+    color: white;
+    padding: 8px 12px;
+    margin: 4px 0;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
-  }
-  
-  #riderList li.disabled {
-    color: grey;
+    font-size: 14px;
+    min-width: 250px;
+    max-width: 300px;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+
+.rider-button:hover {
+    background-color: #c2185b;
+}
+
+.rider-button.disabled {
+    background-color: #ccc;
+    color: #888;
     cursor: not-allowed;
-  }
-  
+}

@@ -74,6 +74,7 @@ def rider_selection(request):
 
             return redirect(request.path)
 
+    # Get current race and stages
     current_race = Race.objects.order_by('-year').first()
     if current_race:
         stages = Stage.objects.filter(race=current_race).order_by('stage_date', 'stage_number')
@@ -84,9 +85,17 @@ def rider_selection(request):
     rider_limit = 1 if race_length <= 8 else 2 if race_length <= 14 else 3
 
     riders = Rider.objects.filter(is_participating=True).order_by('start_number')
-    dnf_riders = StageResult.objects.filter(stage__race=current_race, finishing_time__isnull=True).values_list('rider_id', flat=True)
+    dnf_riders = StageResult.objects.filter(
+        stage__race=current_race,
+        finishing_time__isnull=True
+    ).values_list('rider_id', flat=True)
 
-    player_selections = PlayerSelection.objects.filter(player=request.user, stage__in=stages, stage__is_canceled=False).select_related('stage', 'rider')
+    player_selections = PlayerSelection.objects.filter(
+        player=request.user,
+        stage__in=stages,
+        stage__is_canceled=False
+    ).select_related('stage', 'rider')
+
     selected_stage_rider_ids = set(sel.rider.id for sel in player_selections if sel.rider and sel.stage is not None)
     selection_lookup = {sel.stage_id: sel for sel in player_selections}
 
@@ -100,7 +109,7 @@ def rider_selection(request):
     else:
         backup_locked = True
 
-
+    # --- Stage data ---
     stage_data = []
     total_gc_time = timedelta(0)
 
@@ -152,18 +161,23 @@ def rider_selection(request):
             'is_canceled': stage.is_canceled,
         })
 
+    # --- Calculate rider usage ---
     rider_usage = {}
     for selection in player_selections:
         if selection.rider:
             rider_id = selection.rider.id
             rider_usage[rider_id] = rider_usage.get(rider_id, 0) + 1
 
-    # 🔥 Group riders by team for pop-up
-    from collections import defaultdict
+    # --- Build teams and riders for modal ---
     team_riders = defaultdict(list)
-    for rider in riders.order_by('start_number'):
+    for rider in riders:
         selection_count = rider_usage.get(rider.id, 0)
         is_backup = backup_selection and backup_selection.rider and rider.id == backup_selection.rider.id
+
+        # ✨ Mark unavailable riders
+        is_unavailable = False
+        if is_backup or selection_count >= rider_limit or rider.id in selected_stage_rider_ids:
+            is_unavailable = True
 
         team_riders[rider.team].append({
             'id': rider.id,
@@ -172,6 +186,7 @@ def rider_selection(request):
             'is_dnf': rider.id in dnf_riders,
             'is_backup': is_backup,
             'selection_count': selection_count,
+            'is_unavailable': is_unavailable,
         })
 
     backup_riders_data = []
@@ -180,13 +195,11 @@ def rider_selection(request):
         key=lambda item: min(r['start_number'] for r in item[1])
     )
 
-    backup_riders_data = []
     for team_name, members in sorted_teams:
         backup_riders_data.append({
             'team': team_name,
             'riders': sorted(members, key=lambda x: x['start_number'])
         })
-        
 
     return render(request, 'rider_selection.html', {
         'stage_data': stage_data,
@@ -196,7 +209,6 @@ def rider_selection(request):
         'backup_riders': backup_riders_data,
         'rider_limit': rider_limit,
     })
-
 
 
 @require_POST
