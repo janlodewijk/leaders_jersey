@@ -124,6 +124,7 @@ select {
     justify-content: space-between;
     width: 100%;
     margin-bottom: 15px;
+    position: relative;
 }
 
 .team-box {
@@ -137,11 +138,12 @@ select {
 .team-title {
     font-size: 20px;
     font-weight: bold;
-    margin: 0;
+    margin: 0 40px;
     padding-bottom: 5px;
     flex-grow: 1;
     text-align: center;
     border-bottom: 2px solid #d63384;
+    color: #d63384;
 }
 
 .arrow-container {
@@ -154,17 +156,41 @@ select {
 
 .arrow-button {
     font-size: 24px;
-    padding: 5px 10px;
-    cursor: pointer;
-    background-color: #d63384;
+    width: 40px;
+    height: 40px;
+    padding: 0; /* No extra padding */
+    background-color: #d63384; /* Giro pink */
     color: white;
     border: none;
-    border-radius: 5px;
-    min-width: 40px;
+    border-radius: 50%; /* make it a perfect circle */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: bolder; /* optional: make the arrow thicker */
+    transition: background-color 0.3s;
+}
+
+.arrow-symbol {
+    position: relative;
+    top: -2px; /* Move the ← → a little up */
+    font-size: 24px;
 }
 
 .arrow-button:hover {
     background-color: #c2185b;
+}
+
+.arrow-button:focus {
+    background-color: #c2185b; /* Stay pink even when focused */
+    outline: none;
+}
+
+/* Optional: Smaller on mobile */
+@media (max-width: 600px) {
+    .arrow-button {
+        font-size: 24px;
+    }
 }
 
 /* === Rider Buttons === */

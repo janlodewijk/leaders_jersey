@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
         teamHeader.classList.add('team-header');
 
         const leftArrow = document.createElement('button');
-        leftArrow.textContent = '⬅️';
+        leftArrow.textContent = '←';
         leftArrow.classList.add('arrow-button');
         leftArrow.addEventListener('click', function () {
             teamIndex = (teamIndex - 1 + teams.length) % teams.length;
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
         teamTitle.classList.add('team-title');
 
         const rightArrow = document.createElement('button');
-        rightArrow.textContent = '➡️';
+        rightArrow.textContent = '→';
         rightArrow.classList.add('arrow-button');
         rightArrow.addEventListener('click', function () {
             teamIndex = (teamIndex + 1) % teams.length;
