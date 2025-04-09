@@ -22,6 +22,12 @@ h1, h2, h3 {
     text-align: center;
 }
 
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 /* === Tables === */
 table {
     width: 100%;
@@ -224,4 +230,105 @@ select {
     background-color: #ccc;
     color: #888;
     cursor: not-allowed;
+}
+
+.navbar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 10px 30px;
+}
+
+.nav-left {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 20px;
+}
+
+.nav-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.nav-right {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.nav-left a,
+.nav-right a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: #d63384; /* Pink color */
+    text-decoration: none;
+    font-weight: bold;
+    font-family: 'Poppins', sans-serif;
+    font-size: 16px;
+}
+
+.nav-left a:hover,
+.nav-right a:hover {
+    text-decoration: underline;
+}
+
+.logo-img {
+    height: 70px; /* Adjust if you want bigger/smaller logo */
+}
+
+.logout-form {
+    display: inline;
+}
+
+.logout-button {
+    background: none;
+    border: none;
+    color: #d63384;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.logout-button:hover {
+    text-decoration: underline;
+}
+
+.nav-left a,
+.nav-right a {
+    color: #d63384; /* Pink color */
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.nav-left a:hover,
+.nav-right a:hover {
+    text-decoration: underline;
+}
+
+.logo-img {
+    height: 100px; /* Adjust based on your logo */
+}
+
+.logout-form {
+    display: inline;
+}
+
+.logout-button {
+    background: none;
+    border: none;
+    color: #d63384;
+    font-weight: bold;
+    font-size: 16px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: none; /* Like a normal link */
+}
+
+.logout-button:hover {
+    text-decoration: underline;
 }
