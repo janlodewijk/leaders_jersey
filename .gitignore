@@ -1,3 +1,4 @@
 step_plan.txt
-leaders_jersey\game\__pycache__\
+leaders_jersey/game/__pycache__/
 checklist.txt
+venv/
