@@ -11,9 +11,9 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    background-color: fff0f5;   /* <-- add this */
-    border: 1px solid #ddd;     /* <-- optional: add a light border */
-    border-radius: 10px;        /* <-- optional: make it a bit rounded */
+    background-color: #fff0f5; 
+    border: 1px solid #ddd;
+    border-radius: 10px;
 }
 
 /* === Headers === */
@@ -37,23 +37,22 @@ th, td {
 }
 
 th {
-    background-color: black; /* Soft pink background */
+    background-color: black;
     color: #fff0f5;
 }
 
 /* === Zebra striping for tables === */
 table tbody tr:nth-child(odd) {
-    background-color: #fff0f5; /* Light pink for odd rows */
+    background-color: #fff0f5;
 }
 
 table tbody tr:nth-child(even) {
-    background-color: #ffffff; /* White for even rows */
+    background-color: #ffffff;
 }
 
 table tbody tr:hover {
-    background-color: #ffe6f0; /* Even softer pink on hover */
+    background-color: #ffe6f0;
 }
-
 
 /* === Buttons === */
 button, .button {
@@ -86,4 +85,143 @@ select {
 .canceled {
     color: red;
     font-weight: bold;
+}
+
+/* === Modal === */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fff0f5;
+    margin: 5% auto;
+    padding: 20px;
+    border: 2px solid #d63384;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 10px;
+    animation: fadeIn 0.5s ease;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* === Team Popup === */
+.team-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.team-box {
+    border: 2px solid #d63384;
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #fff0f5;
+    text-align: center;
+}
+
+.team-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0 40px;
+    padding-bottom: 5px;
+    flex-grow: 1;
+    text-align: center;
+    border-bottom: 2px solid #d63384;
+    color: #d63384;
+}
+
+.arrow-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 20px;
+}
+
+.arrow-button {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    padding: 0; /* No extra padding */
+    background-color: #d63384; /* Giro pink */
+    color: white;
+    border: none;
+    border-radius: 50%; /* make it a perfect circle */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: bolder; /* optional: make the arrow thicker */
+    transition: background-color 0.3s;
+}
+
+.arrow-symbol {
+    position: relative;
+    top: -2px; /* Move the ← → a little up */
+    font-size: 24px;
+}
+
+.arrow-button:hover {
+    background-color: #c2185b;
+}
+
+.arrow-button:focus {
+    background-color: #c2185b; /* Stay pink even when focused */
+    outline: none;
+}
+
+/* Optional: Smaller on mobile */
+@media (max-width: 600px) {
+    .arrow-button {
+        font-size: 24px;
+    }
+}
+
+/* === Rider Buttons === */
+.riders-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.rider-button {
+    background-color: #d63384;
+    color: white;
+    padding: 8px 12px;
+    margin: 4px 0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    min-width: 250px;
+    max-width: 300px;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+
+.rider-button:hover {
+    background-color: #c2185b;
+}
+
+.rider-button.disabled {
+    background-color: #ccc;
+    color: #888;
+    cursor: not-allowed;
 }

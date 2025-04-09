@@ -10,6 +10,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 import pandas as pd
+from django.http import JsonResponse
+from collections import defaultdict
 
 def register(request):
     if request.method == 'POST':
@@ -47,142 +49,156 @@ def profile(request):
 
 @login_required
 def rider_selection(request):
+    if request.method == 'POST':
+        rider_id = request.POST.get('rider_id')
+        stage_id = request.POST.get('stage_id')
 
-    # Get the most recent race
+        if rider_id:
+            rider = Rider.objects.get(id=rider_id)
+
+            if not stage_id:
+                # Backup rider
+                PlayerSelection.objects.update_or_create(
+                    player=request.user,
+                    stage=None,
+                    defaults={'rider': rider}
+                )
+            else:
+                # Stage rider
+                stage = Stage.objects.get(id=stage_id)
+                PlayerSelection.objects.update_or_create(
+                    player=request.user,
+                    stage=stage,
+                    defaults={'rider': rider}
+                )
+
+            return redirect(request.path)
+
+    # Get current race and stages
     current_race = Race.objects.order_by('-year').first()
-
-    # Retrieve the stages for this race
     if current_race:
         stages = Stage.objects.filter(race=current_race).order_by('stage_date', 'stage_number')
     else:
         stages = []
-    
-    # Define selection limit per rider
+
     race_length = len(stages)
+    rider_limit = 1 if race_length <= 8 else 2 if race_length <= 14 else 3
 
-    if race_length <= 8:
-        rider_limit = 1
-    elif race_length <= 14:
-        rider_limit = 2
-    else:
-        rider_limit = 3
-    
-    # Get all riders to show in the dropdown
-    riders = Rider.objects.filter(is_participating=True).order_by('rider_name')
-
-    # Get all riders who did not finish in the last stage (or a previous stage)
+    riders = Rider.objects.filter(is_participating=True).order_by('start_number')
     dnf_riders = StageResult.objects.filter(
         stage__race=current_race,
         finishing_time__isnull=True
     ).values_list('rider_id', flat=True)
 
-    # To make sure the dnf riders are at the bottom
-    eligible_riders = riders.exclude(id__in=dnf_riders)
-    dnf_riders_qs = riders.filter(id__in=dnf_riders)
-    sorted_riders = list(eligible_riders) + list(dnf_riders_qs)
-
-    # Get all PlayerSelections for this user and race
     player_selections = PlayerSelection.objects.filter(
         player=request.user,
         stage__in=stages,
         stage__is_canceled=False
     ).select_related('stage', 'rider')
 
-    # Count number of times a rider is selected:
-    rider_usage = {}
-    for selection in player_selections:
-        if selection.rider:
-            rider_id = selection.rider.id
-            rider_usage[rider_id] = rider_usage.get(rider_id, 0) + 1
-
-    # Get all selected stage rider IDs
     selected_stage_rider_ids = set(sel.rider.id for sel in player_selections if sel.rider and sel.stage is not None)
+    selection_lookup = {sel.stage_id: sel for sel in player_selections}
 
-    # Build a lookup dictionary: { stage_id: selection }
-    selection_lookup = { sel.stage_id: sel for sel in player_selections }
-
-    # Get the backup rider selection (stage=None)
     backup_selection = PlayerSelection.objects.filter(player=request.user, stage=None).first()
-
-    # Get the backup rider ID
     backup_rider_id = backup_selection.rider.id if backup_selection and backup_selection.rider else None
-
-    # Allow changing the backup rider if current one DNF
     backup_rider_dnf = backup_rider_id in dnf_riders if backup_rider_id else False
 
-    # Determine stage 1 deadline
     if stages:
-        stage1_deadline = timezone.make_aware(datetime.combine(stages[0].stage_date, time(hour=12)))
-        backup_locked = timezone.now() > stage1_deadline and not backup_rider_dnf
+        stage1_start = timezone.make_aware(datetime.combine(stages[0].stage_date, stages[0].start_time))
+        backup_locked = timezone.now() > stage1_start and not backup_rider_dnf
     else:
         backup_locked = True
 
+    # --- Stage data ---
     stage_data = []
     total_gc_time = timedelta(0)
 
-    # Define selection deadline for each stage (12:00 by default)
     for stage in stages:
         deadline = timezone.make_aware(datetime.combine(stage.stage_date, stage.start_time))
         locked = timezone.now() > deadline
-        # locked = False  # This line is just for testing with a race from the past. Remove it if you want it to operate in the present.
 
-        deadline_iso = deadline.isoformat()
-
-        # Check if user already made a selection for this stage
         selection = selection_lookup.get(stage.id)
         selected_rider = selection.rider if selection else None
 
-        # Check result logic with fallback and backup rider
         result = None
         used_backup = False
         used_fallback = False
-        result_source = None
 
         if selected_rider:
-            result_source = None
             try:
                 result = StageResult.objects.get(stage=stage, rider=selected_rider)
-                result_source = "selection"
             except StageResult.DoesNotExist:
-                result = None
+                pass
 
-        # Try backup rider if main rider has no result
         if not result and selection and backup_selection and backup_selection.rider:
             try:
                 result = StageResult.objects.get(stage=stage, rider=backup_selection.rider)
                 used_backup = True
-                result_source = "backup"
             except StageResult.DoesNotExist:
                 pass
 
-        # Final fallback to last finisher if both failed
         if not result:
             last_result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
             if last_result:
                 result = last_result
                 used_fallback = True
-                result_source = "last finisher"
 
         if result:
             if used_fallback:
-                total_gc_time += result.finishing_time  # no bonus
+                total_gc_time += result.finishing_time
             else:
                 total_gc_time += result.finishing_time - result.bonus
-
 
         stage_data.append({
             'stage': stage,
             'locked': locked,
             'selection': selected_rider,
             'result': result,
-            'riders': riders.exclude(id=backup_rider_id) if backup_rider_id else riders,
-            'sorted_riders': sorted_riders,
             'deadline': deadline,
-            'deadline_iso': deadline_iso,
+            'deadline_iso': deadline.isoformat(),
             'used_backup': used_backup,
             'used_fallback': used_fallback,
-            'result_source': result_source,
             'is_canceled': stage.is_canceled,
+        })
+
+    # --- Calculate rider usage ---
+    rider_usage = {}
+    for selection in player_selections:
+        if selection.rider:
+            rider_id = selection.rider.id
+            rider_usage[rider_id] = rider_usage.get(rider_id, 0) + 1
+
+    # --- Build teams and riders for modal ---
+    team_riders = defaultdict(list)
+    for rider in riders:
+        selection_count = rider_usage.get(rider.id, 0)
+        is_backup = backup_selection and backup_selection.rider and rider.id == backup_selection.rider.id
+
+        # ✨ Mark unavailable riders
+        is_unavailable = False
+        if is_backup or selection_count >= rider_limit or rider.id in selected_stage_rider_ids:
+            is_unavailable = True
+
+        team_riders[rider.team].append({
+            'id': rider.id,
+            'start_number': rider.start_number,
+            'rider_name': rider.rider_name,
+            'is_dnf': rider.id in dnf_riders,
+            'is_backup': is_backup,
+            'selection_count': selection_count,
+            'is_unavailable': is_unavailable,
+        })
+
+    backup_riders_data = []
+    sorted_teams = sorted(
+        team_riders.items(),
+        key=lambda item: min(r['start_number'] for r in item[1])
+    )
+
+    for team_name, members in sorted_teams:
+        backup_riders_data.append({
+            'team': team_name,
+            'riders': sorted(members, key=lambda x: x['start_number'])
         })
 
     return render(request, 'rider_selection.html', {
@@ -190,12 +206,9 @@ def rider_selection(request):
         'total_gc_time': total_gc_time,
         'backup_selection': backup_selection,
         'backup_locked': backup_locked,
-        'backup_riders': riders.exclude(id__in=selected_stage_rider_ids),
-        'dnf_riders': dnf_riders,
-        'rider_usage': rider_usage,
+        'backup_riders': backup_riders_data,
         'rider_limit': rider_limit,
     })
-
 
 
 @require_POST
