@@ -15,16 +15,13 @@ from .forms import CustomUserCreationForm
 
 def register(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         team_name = request.POST.get('team_name')
 
         if form.is_valid():
             user = form.save()
-            user_profile = user
-
-            if team_name:
-                user.first_name = team_name
-                user.save()
+            user.profile.team_name = team_name
+            user.profile.save()
             
             messages.success(request, 'Registration successful!')
             login(request, user)
@@ -397,3 +394,16 @@ def save_backup_selection(request):
         selection.save()
 
     return redirect('rider_selection')
+
+
+@login_required
+def profile(request):
+    if request.method == 'POST':
+        team_name = request.POST.get('team_name')
+        request.user.profile.team_name = team_name
+        request.user.profile.save()
+        messages.success(request, '✅ Team name updated!')
+
+        return redirect('profile')
+
+    return render(request, 'profile.html', {})

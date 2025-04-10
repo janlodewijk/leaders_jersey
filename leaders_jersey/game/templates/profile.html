@@ -1,6 +1,25 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>{{ user.username }}'s profile</h2>
-    <p>{{ user.email }}</p>
+<div class="profile-container">
+    <h2>🚴‍♂️ Your Profile</h2>
+
+    <div class="profile-info">
+        <p><strong>Player name:</strong> {{ request.user.username }}</p>
+
+        {% if not request.GET.change %}
+            <p><strong>Team name:</strong> {{ request.user.profile.team_name }}</p>
+            <a href="?change=true" class="button small-button">Change</a>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="team_name"><strong>New Team Name:</strong></label><br>
+                    <input type="text" name="team_name" id="team_name" value="{{ request.user.profile.team_name }}">
+                </div>
+                <button type="submit" class="button">Save</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

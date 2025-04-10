@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Rider, Race, Stage, StageResult
+from .models import Rider, Race, Stage, StageResult, Profile
 
 # Register your models here.
 
@@ -23,3 +23,8 @@ class StageResultAdmin(admin.ModelAdmin):
     list_display = ('stage', 'ranking', 'rider', 'finishing_time', 'bonus')
     list_filter = ('stage',)
     ordering = ('stage', 'ranking')
+
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'team_name')
+
+admin.site.register(Profile, ProfileAdmin)

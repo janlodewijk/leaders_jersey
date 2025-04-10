@@ -368,3 +368,49 @@ select {
     margin-bottom: 5px;
     font-weight: bold;
 }
+
+.profile-container {
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 20px;
+    border: 2px solid #d63384;
+    background-color: #fff0f5;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.profile-info p {
+    font-size: 18px;
+    margin: 10px 0;
+}
+
+.small-button {
+    background-color: #d63384;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 10px;
+}
+
+.small-button:hover {
+    background-color: #c2185b;
+}
+
+.messages {
+    margin: 20px auto;
+    max-width: 600px;
+    text-align: center;
+}
+
+.message {
+    background-color: #d63384;
+    color: white;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    font-size: 16px;
+}
+

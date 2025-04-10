@@ -45,12 +45,12 @@
     </header>
 
     {% if messages %}
-    <ul>
+    <div class="messages">
         {% for message in messages %}
-        <li>{{ message }}</li>
+            <div class="message">{{ message }}</div>
         {% endfor %}
-    </ul>
-    {% endif %}
+    </div>
+    {% endif %} 
 
     <main>
         {% block content %}
