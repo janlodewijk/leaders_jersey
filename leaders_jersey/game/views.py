@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth.views import LoginView
-from django.contrib.auth import logout
+from django.contrib.auth import logout, login
 from django.contrib.auth.decorators import login_required
 from game.models import Race, Stage, Rider, PlayerSelection, StageResult
 from datetime import datetime, time, timedelta
@@ -10,20 +10,29 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 import pandas as pd
-from django.http import JsonResponse
 from collections import defaultdict
+from .forms import CustomUserCreationForm
 
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
+        team_name = request.POST.get('team_name')
+
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Registration successful! You can now log in.')
-            return redirect('login')
+            user = form.save()
+            user_profile = user
+
+            if team_name:
+                user.first_name = team_name
+                user.save()
+            
+            messages.success(request, 'Registration successful!')
+            login(request, user)
+            return redirect('profile')
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
     
-    return render(request, 'registration/register.html', {'form': form})
+    return render(request, 'register.html', {'form': form})
 
 
 class CustomLoginView(LoginView):
