@@ -414,3 +414,46 @@ select {
     font-size: 16px;
 }
 
+.leaderboard-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    margin-top: 30px;
+}
+
+.game-gc, .actual-gc {
+    flex: 1;
+}
+
+.leaderboard-table, .actual-gc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+}
+
+.actual-gc-table {
+    font-size: 14px;
+}
+
+.leaderboard-table th, .leaderboard-table td,
+.actual-gc-table th, .actual-gc-table td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+}
+
+.leaderboard-table thead {
+    background-color: #d63384; /* Giro pink for Game GC */
+    color: white;
+}
+
+.actual-gc-table thead {
+    background-color: black; /* Black for Actual GC */
+    color: white;
+}
+
+.game-gc h2, .actual-gc h3 {
+    text-align: center;
+    color: #d63384;
+}

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Rider, Race, Stage, StageResult, Profile
+from .models import Rider, Race, Stage, StageResult, Profile, Team
 
 # Register your models here.
 
@@ -28,3 +28,7 @@ class ProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'team_name')
 
 admin.site.register(Profile, ProfileAdmin)
+
+@admin.register(Team)
+class TeamAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code')

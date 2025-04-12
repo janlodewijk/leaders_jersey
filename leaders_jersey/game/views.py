@@ -189,6 +189,8 @@ def rider_selection(request):
             'id': rider.id,
             'start_number': rider.start_number,
             'rider_name': rider.rider_name,
+            'team_name': rider.team.name if rider.team else "Unknown",
+            'team_code': rider.team.code if rider.team else "UNK",
             'is_dnf': rider.id in dnf_riders,
             'is_backup': is_backup,
             'selection_count': selection_count,
@@ -203,7 +205,7 @@ def rider_selection(request):
 
     for team_name, members in sorted_teams:
         backup_riders_data.append({
-            'team': team_name,
+            'team': team_name.name if hasattr(team_name, 'name') else str(team_name),
             'riders': sorted(members, key=lambda x: x['start_number'])
         })
 
@@ -286,7 +288,7 @@ def leaderboard(request):
         gc_rider_data = {
             'name': result.rider.rider_name,
             'team': result.rider.team,
-            'gc_time': formatted_gc_time,  # use formatted value!
+            'gc_time': formatted_gc_time,
             'gc_rank': result.gc_rank,
         }
 
@@ -356,6 +358,7 @@ def leaderboard(request):
 
         leaderboard_data.append({
             'player': user,
+            'team_name': user.profile.team_name,
             'total_time': formatted_total_time,
             'num_selections': selections.count()
         })

@@ -42,9 +42,17 @@ class Stage(models.Model):
         return f"{self.race.race_name} - Stage {self.stage_number}"
 
 
+class Team(models.Model):
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=5)
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+
 class Rider(models.Model):
     rider_name = models.CharField(max_length=100)
-    team = models.CharField(max_length=100)
+    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
     nationality = models.CharField(max_length=100)
     external_id = models.CharField(max_length=100, unique=True)
     start_number = models.PositiveSmallIntegerField(null=True, blank=True)
