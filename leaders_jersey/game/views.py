@@ -287,7 +287,7 @@ def leaderboard(request):
 
         gc_rider_data = {
             'name': result.rider.rider_name,
-            'team': result.rider.team,
+            'team': result.rider.team.code if result.rider.team else "UNK",
             'gc_time': formatted_gc_time,
             'gc_rank': result.gc_rank,
         }

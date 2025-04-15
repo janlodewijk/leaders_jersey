@@ -44,7 +44,6 @@
         <tr>
           <th>Rank</th>
           <th>Rider</th>
-          <th>Team</th>
           <th>GC Time</th>
         </tr>
       </thead>
@@ -52,8 +51,7 @@
         {% for rider in gc_data %}
           <tr>
             <td>{{ rider.gc_rank }}</td>
-            <td>{{ rider.name }}</td>
-            <td>{{ rider.team }}</td>
+            <td>{{ rider.name }} ({{ rider.team }})</td>
             <td>{{ rider.gc_time }}</td>
           </tr>
         {% empty %}
