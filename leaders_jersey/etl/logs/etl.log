@@ -29,3 +29,15 @@
 2025-04-16 14:23:07,345 [INFO] Watching for file changes with StatReloader
 2025-04-16 14:23:54,779 [INFO] C:\Users\User\OneDrive\Documenten\GitHub\leaders_jersey\leaders_jersey\etl\transform\transform_startlist.py changed, reloading.
 2025-04-16 14:23:56,161 [INFO] Watching for file changes with StatReloader
+2025-04-16 15:10:36,792 [INFO] C:\Users\User\OneDrive\Documenten\GitHub\leaders_jersey\leaders_jersey\etl\load\load_stage_info.py changed, reloading.
+2025-04-16 15:10:38,865 [INFO] Watching for file changes with StatReloader
+2025-04-16 15:13:51,170 [INFO] C:\Users\User\OneDrive\Documenten\GitHub\leaders_jersey\leaders_jersey\etl\load\load_stage_info.py changed, reloading.
+2025-04-16 15:13:52,595 [INFO] Watching for file changes with StatReloader
+2025-04-16 15:13:59,577 [INFO] C:\Users\User\OneDrive\Documenten\GitHub\leaders_jersey\leaders_jersey\etl\load\load_stage_info.py changed, reloading.
+2025-04-16 15:14:01,052 [INFO] Watching for file changes with StatReloader
+2025-04-16 15:29:15,957 [INFO] C:\Users\User\OneDrive\Documenten\GitHub\leaders_jersey\leaders_jersey\etl\load\load_stage_info.py changed, reloading.
+2025-04-16 15:29:17,484 [INFO] Watching for file changes with StatReloader
+2025-04-16 15:31:16,717 [INFO] C:\Users\User\OneDrive\Documenten\GitHub\leaders_jersey\leaders_jersey\etl\load\load_startlist.py changed, reloading.
+2025-04-16 15:31:18,151 [INFO] Watching for file changes with StatReloader
+2025-04-16 15:32:37,234 [INFO] C:\Users\User\OneDrive\Documenten\GitHub\leaders_jersey\leaders_jersey\etl\load\load_startlist.py changed, reloading.
+2025-04-16 15:32:38,647 [INFO] Watching for file changes with StatReloader
