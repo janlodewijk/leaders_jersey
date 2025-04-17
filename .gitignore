@@ -1,4 +1,8 @@
-step_plan.txt
-leaders_jersey/game/__pycache__/
+# Cache files
+__pycache__/
+
+# logs
+leaders_jersey/etl/logs/
+
 checklist.txt
 venv/
