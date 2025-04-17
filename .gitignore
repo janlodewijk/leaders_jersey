@@ -1,8 +1,27 @@
-# Cache files
+# Bytecode / cache
 __pycache__/
 
-# logs
-leaders_jersey/etl/logs/
+# Logs
+logs/
+!etl/logs/.gitkeep
 
-checklist.txt
+# Database
+db.sqlite3
+
+# Images and media
+images/
+
+# Virtual environment
 venv/
+
+# Local notes
+checklist.txt
+notes.txt
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
