@@ -9,7 +9,7 @@ from datetime import datetime, date, timedelta
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
-import pandas as pd
+from django.db.models import Sum
 from collections import defaultdict
 from .forms import CustomUserCreationForm
 
@@ -249,119 +249,89 @@ def save_selection(request, stage_id):
     return redirect('rider_selection')
 
 
-from datetime import timedelta
-
 @login_required
-def leaderboard(request):
-    current_race = Race.objects.order_by('-year').first()
-    stages = Stage.objects.filter(race=current_race)
+def leaderboard(request, race_slug, year):
+    race = get_object_or_404(Race, url_reference=race_slug, year=year)
+    stages = Stage.objects.filter(race=race)
 
-    # Get the latest stage that has GC data
+    # GC standings from real race
     stages_with_gc = StageResult.objects.filter(
         stage__in=stages,
         gc_rank__isnull=False
     ).values('stage').distinct()
 
+    most_recent_stage = None
     if stages_with_gc:
-        latest_stage_with_gc_id = max(stage['stage'] for stage in stages_with_gc)
-        most_recent_stage = Stage.objects.get(id=latest_stage_with_gc_id)
-    else:
-        most_recent_stage = None
+        latest_stage_id = max(stage['stage'] for stage in stages_with_gc)
+        most_recent_stage = Stage.objects.get(id=latest_stage_id)
 
-    # Get top 10 GC riders after that stage
-    top_10_riders = StageResult.objects.filter(
-        stage=most_recent_stage,
-        gc_rank__isnull=False
-    ).order_by('gc_rank')[:10]
+    top_10_riders = []
+    if most_recent_stage:
+        top_10_riders = StageResult.objects.filter(
+            stage=most_recent_stage,
+            gc_rank__isnull=False
+        ).order_by('gc_rank')[:10]
 
-    # ✅ Collect GC data for display (with pretty formatting!)
     gc_data = []
     for result in top_10_riders:
-        if result.gc_time:
-            total_seconds = result.gc_time.total_seconds()
-            hours = int(total_seconds // 3600)
-            minutes = int((total_seconds % 3600) // 60)
-            seconds = int(total_seconds % 60)
-            formatted_gc_time = f"{hours}:{minutes:02}:{seconds:02}"
-        else:
-            formatted_gc_time = "-"
-
-        gc_rider_data = {
+        time = result.gc_time
+        formatted_gc_time = (
+            f"{int(time.total_seconds() // 3600)}:"
+            f"{int((time.total_seconds() % 3600) // 60):02}:"
+            f"{int(time.total_seconds() % 60):02}"
+        ) if time else "-"
+        gc_data.append({
             'name': result.rider.rider_name,
             'team': result.rider.team.code if result.rider.team else "UNK",
             'gc_time': formatted_gc_time,
             'gc_rank': result.gc_rank,
-        }
+        })
 
-        gc_data.append(gc_rider_data)
-
-    # 🎮 Game leaderboard
-    users_with_selections = User.objects.filter(
-        selections__stage__in=stages
-    ).distinct()
-
+    # Player leaderboard using RaceParticipant
+    participants = RaceParticipant.objects.filter(race=race).select_related('user')
     leaderboard_data = []
 
-    for user in users_with_selections:
-        total_time = timedelta(0)
-
-        # Get selections and backup for this user
+    for participant in participants:
         selections = PlayerSelection.objects.filter(
-            player=user,
+            race_participant=participant,
             stage__in=stages
         ).select_related('stage', 'rider')
 
-        backup_selection = PlayerSelection.objects.filter(player=user, stage=None).first()
-        backup_rider = backup_selection.rider if backup_selection else None
+        backup_selection = PlayerSelection.objects.filter(
+            race_participant=participant,
+            stage=None
+        ).first()
 
-        # Lookup per stage
-        stage_lookup = {s.stage_id: s for s in selections}
+        backup_rider = backup_selection.rider if backup_selection else None
+        total_time = timedelta(0)
 
         for stage in stages:
             result = None
-            used_fallback = False
+            selection = next((s for s in selections if s.stage_id == stage.id), None)
 
-            # 1. Check selected rider
-            selection = stage_lookup.get(stage.id)
             if selection and selection.rider:
-                try:
-                    result = StageResult.objects.get(stage=stage, rider=selection.rider)
-                except StageResult.DoesNotExist:
-                    result = None
+                result = StageResult.objects.filter(stage=stage, rider=selection.rider).first()
 
-            # 2. Check backup rider
             if not result and backup_rider:
-                try:
-                    result = StageResult.objects.get(stage=stage, rider=backup_rider)
-                except StageResult.DoesNotExist:
-                    result = None
+                result = StageResult.objects.filter(stage=stage, rider=backup_rider).first()
 
-            # 3. Fallback: last classified finisher
             if not result:
                 result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
-                used_fallback = True
 
-            # 4. Add time
             if result:
-                if used_fallback:
-                    total_time += result.finishing_time  # no bonus
-                else:
-                    total_time += result.finishing_time - result.bonus
-        total_seconds = total_time.total_seconds()
+                total_time += result.finishing_time - result.bonus
 
-        if total_seconds > 0:
-            hours = int(total_seconds // 3600)
-            minutes = int((total_seconds % 3600) // 60)
-            seconds = int(total_seconds % 60)
-            formatted_total_time = f"{hours}:{minutes:02}:{seconds:02}"
-        else:
-            formatted_total_time = "0:00:00"
+        total_seconds = total_time.total_seconds()
+        formatted_total_time = (
+            f"{int(total_seconds // 3600)}:{int((total_seconds % 3600) // 60):02}:{int(total_seconds % 60):02}"
+            if total_seconds else "0:00:00"
+        )
 
         leaderboard_data.append({
-            'player': user,
-            'team_name': user.profile.team_name,
+            'player': participant.user,
+            'team_name': participant.user.profile.team_name,
             'total_time': formatted_total_time,
-            'num_selections': selections.count()
+            'num_selections': selections.count(),
         })
 
     leaderboard_data.sort(key=lambda x: x['total_time'])
@@ -369,8 +339,8 @@ def leaderboard(request):
     return render(request, 'leaderboard.html', {
         'leaderboard_data': leaderboard_data,
         'gc_data': gc_data,
+        'race': race,
     })
-
 
 
 @require_POST
