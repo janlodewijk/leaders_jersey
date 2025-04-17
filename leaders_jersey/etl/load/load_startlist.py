@@ -1,5 +1,6 @@
 from game.models import Rider, Team, Race, StartlistEntry
 from etl.logging_config import logger
+import pandas as pd
 
 
 def load_startlist(transformed_startlist):
@@ -13,6 +14,10 @@ def load_startlist(transformed_startlist):
             nationality = row['nationality']
             external_id = row['external_id']
             start_number = row['start_number']
+            if pd.isna(start_number):
+                start_number = None
+            else:
+                start_number = int(start_number)
             race_slug = row['race']
             year = row['year']
 
