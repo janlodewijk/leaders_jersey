@@ -4,8 +4,8 @@ from django.contrib import messages
 from django.contrib.auth.views import LoginView
 from django.contrib.auth import logout, login
 from django.contrib.auth.decorators import login_required
-from game.models import Race, Stage, Rider, PlayerSelection, StageResult
-from datetime import datetime, time, timedelta
+from game.models import Race, Stage, Rider, PlayerSelection, StageResult, RaceParticipant, StartlistEntry
+from datetime import datetime, date, timedelta
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
@@ -54,7 +54,16 @@ def profile(request):
 
 
 @login_required
-def rider_selection(request):
+def rider_selection(request, race_slug, year):
+    race = get_object_or_404(Race, url_reference=race_slug, year=year)
+
+    # Check if the user has joined this race
+    try:
+        participant = RaceParticipant.objects.get(user=request.user, race=race)
+    except RaceParticipant.DoesNotExist:
+        return redirect('join_race', race_slug=race_slug, year=year)
+
+    # Handle POST selection
     if request.method == 'POST':
         rider_id = request.POST.get('rider_id')
         stage_id = request.POST.get('stage_id')
@@ -63,57 +72,57 @@ def rider_selection(request):
             rider = Rider.objects.get(id=rider_id)
 
             if not stage_id:
-                # Backup rider
                 PlayerSelection.objects.update_or_create(
-                    player=request.user,
+                    race_participant=participant,
                     stage=None,
                     defaults={'rider': rider}
                 )
             else:
-                # Stage rider
                 stage = Stage.objects.get(id=stage_id)
                 PlayerSelection.objects.update_or_create(
-                    player=request.user,
+                    race_participant=participant,
                     stage=stage,
                     defaults={'rider': rider}
                 )
 
             return redirect(request.path)
 
-    # Get current race and stages
-    current_race = Race.objects.order_by('-year').first()
-    if current_race:
-        stages = Stage.objects.filter(race=current_race).order_by('stage_date', 'stage_number')
-    else:
-        stages = []
-
+    # Get stages for this race
+    stages = Stage.objects.filter(race=race).order_by('stage_date', 'stage_number')
     race_length = len(stages)
     rider_limit = 1 if race_length <= 8 else 2 if race_length <= 14 else 3
 
-    riders = Rider.objects.filter(is_participating=True).order_by('start_number')
+    # Get riders from the startlist
+    entries = StartlistEntry.objects.filter(race=race).select_related('rider', 'team').order_by('start_number')
+    riders = [entry.rider for entry in entries]
+
     dnf_riders = StageResult.objects.filter(
-        stage__race=current_race,
+        stage__race=race,
         finishing_time__isnull=True
     ).values_list('rider_id', flat=True)
 
+    # Player selections
     player_selections = PlayerSelection.objects.filter(
-        player=request.user,
+        race_participant=participant,
         stage__in=stages,
         stage__is_canceled=False
     ).select_related('stage', 'rider')
 
-    selected_stage_rider_ids = set(sel.rider.id for sel in player_selections if sel.rider and sel.stage is not None)
     selection_lookup = {sel.stage_id: sel for sel in player_selections}
+    selected_stage_rider_ids = {sel.rider.id for sel in player_selections if sel.rider and sel.stage}
 
-    backup_selection = PlayerSelection.objects.filter(player=request.user, stage=None).first()
+    backup_selection = PlayerSelection.objects.filter(
+        race_participant=participant,
+        stage=None
+    ).first()
+
     backup_rider_id = backup_selection.rider.id if backup_selection and backup_selection.rider else None
     backup_rider_dnf = backup_rider_id in dnf_riders if backup_rider_id else False
 
+    backup_locked = True
     if stages:
         stage1_start = timezone.make_aware(datetime.combine(stages[0].stage_date, stages[0].start_time))
         backup_locked = timezone.now() > stage1_start and not backup_rider_dnf
-    else:
-        backup_locked = True
 
     # --- Stage data ---
     stage_data = []
@@ -131,23 +140,15 @@ def rider_selection(request):
         used_fallback = False
 
         if selected_rider:
-            try:
-                result = StageResult.objects.get(stage=stage, rider=selected_rider)
-            except StageResult.DoesNotExist:
-                pass
+            result = StageResult.objects.filter(stage=stage, rider=selected_rider).first()
 
-        if not result and selection and backup_selection and backup_selection.rider:
-            try:
-                result = StageResult.objects.get(stage=stage, rider=backup_selection.rider)
-                used_backup = True
-            except StageResult.DoesNotExist:
-                pass
+        if not result and backup_selection and backup_selection.rider:
+            result = StageResult.objects.filter(stage=stage, rider=backup_selection.rider).first()
+            used_backup = result is not None
 
         if not result:
-            last_result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
-            if last_result:
-                result = last_result
-                used_fallback = True
+            result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
+            used_fallback = result is not None
 
         if result:
             if used_fallback:
@@ -167,30 +168,29 @@ def rider_selection(request):
             'is_canceled': stage.is_canceled,
         })
 
-    # --- Calculate rider usage ---
+    # --- Rider usage ---
     rider_usage = {}
     for selection in player_selections:
         if selection.rider:
             rider_id = selection.rider.id
             rider_usage[rider_id] = rider_usage.get(rider_id, 0) + 1
 
-    # --- Build teams and riders for modal ---
+    # --- Build modal data ---
     team_riders = defaultdict(list)
-    for rider in riders:
+    for entry in entries:
+        rider = entry.rider
+        team = entry.team or rider.team
+
         selection_count = rider_usage.get(rider.id, 0)
         is_backup = backup_selection and backup_selection.rider and rider.id == backup_selection.rider.id
+        is_unavailable = is_backup or selection_count >= rider_limit or rider.id in selected_stage_rider_ids
 
-        # ✨ Mark unavailable riders
-        is_unavailable = False
-        if is_backup or selection_count >= rider_limit or rider.id in selected_stage_rider_ids:
-            is_unavailable = True
-
-        team_riders[rider.team].append({
+        team_riders[team].append({
             'id': rider.id,
-            'start_number': rider.start_number,
+            'start_number': entry.start_number,
             'rider_name': rider.rider_name,
-            'team_name': rider.team.name if rider.team else "Unknown",
-            'team_code': rider.team.code if rider.team else "UNK",
+            'team_name': team.name if team else "Unknown",
+            'team_code': team.code if team else "UNK",
             'is_dnf': rider.id in dnf_riders,
             'is_backup': is_backup,
             'selection_count': selection_count,
@@ -203,9 +203,9 @@ def rider_selection(request):
         key=lambda item: min(r['start_number'] for r in item[1])
     )
 
-    for team_name, members in sorted_teams:
+    for team, members in sorted_teams:
         backup_riders_data.append({
-            'team': team_name.name if hasattr(team_name, 'name') else str(team_name),
+            'team': team.name if team else str(team),
             'riders': sorted(members, key=lambda x: x['start_number'])
         })
 
@@ -216,6 +216,7 @@ def rider_selection(request):
         'backup_locked': backup_locked,
         'backup_riders': backup_riders_data,
         'rider_limit': rider_limit,
+        'race': race,
     })
 
 
@@ -410,3 +411,33 @@ def profile(request):
         return redirect('profile')
 
     return render(request, 'profile.html', {})
+
+
+@login_required
+def join_race(request, race_slug, year):
+    race = get_object_or_404(Race, url_reference=race_slug, year=year)
+
+    participant, created = RaceParticipant.objects.get_or_create(
+        user=request.user,
+        race=race
+    )
+
+    if created:
+        print(f"{request.user.username} joined {race}")
+    else:
+        print(f"{request.user.username} is already a participant in {race}")
+    
+    return redirect('race_list')
+
+
+@login_required
+def race_list(request):
+    today = date.today()
+    upcoming_races = Race.objects.filter(start_date__gte=today).order_by('start_date')
+
+    joined_races = RaceParticipant.objects.filter(user=request.user).values_list('race_id', flat=True)
+
+    return render(request, 'game/race_list.html', {
+        'upcoming_races': upcoming_races,
+        'joined_race_ids': set(joined_races)
+    })

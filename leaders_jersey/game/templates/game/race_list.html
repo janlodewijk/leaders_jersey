@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Available Races</h2>
+
+<ul>
+  {% for race in upcoming_races %}
+    <li>
+      {{ race.race_name }} ({{ race.year }}) —
+      {% if race.id in joined_race_ids %}
+        ✅ You’ve joined
+      {% else %}
+        <a href="{% url 'join_race' race.url_reference race.year %}">Join</a>
+      {% endif %}
+    </li>
+  {% empty %}
+    <li>No upcoming races</li>
+  {% endfor %}
+</ul>
+
+{% endblock %}
