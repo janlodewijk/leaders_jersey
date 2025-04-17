@@ -88,7 +88,7 @@ def rider_selection(request, race_slug, year):
             return redirect(request.path)
 
     # Get stages for this race
-    stages = Stage.objects.filter(race=race).order_by('stage_date', 'stage_number')
+    stages = Stage.objects.filter(race=race).exclude(stage_number__isnull=True).order_by('stage_date', 'stage_number')
     race_length = len(stages)
     rider_limit = 1 if race_length <= 8 else 2 if race_length <= 14 else 3
 
@@ -200,13 +200,15 @@ def rider_selection(request, race_slug, year):
     backup_riders_data = []
     sorted_teams = sorted(
         team_riders.items(),
-        key=lambda item: min(r['start_number'] for r in item[1])
+        key=lambda item: min(
+            [r['start_number'] for r in item[1] if r['start_number'] is not None] or [9999]
+        )
     )
 
     for team, members in sorted_teams:
         backup_riders_data.append({
             'team': team.name if team else str(team),
-            'riders': sorted(members, key=lambda x: x['start_number'])
+            'riders': sorted(members, key=lambda x: x['start_number'] or 9999)
         })
 
     return render(request, 'rider_selection.html', {
@@ -370,17 +372,42 @@ def save_backup_selection(request):
     return redirect('rider_selection')
 
 
+from django.shortcuts import redirect
+
 @login_required
 def profile(request):
+    profile = request.user.profile
+
+    # 📝 Handle form submission
     if request.method == 'POST':
-        team_name = request.POST.get('team_name')
-        request.user.profile.team_name = team_name
-        request.user.profile.save()
-        messages.success(request, '✅ Team name updated!')
+        new_team_name = request.POST.get('team_name', '').strip()
+        if new_team_name:
+            profile.team_name = new_team_name
+            profile.save()
+        return redirect('profile')  # prevent resubmission on refresh
 
-        return redirect('profile')
+    # 🧾 Build joined races section
+    joined_races = RaceParticipant.objects.filter(user=request.user).select_related('race')
+    races_data = []
 
-    return render(request, 'profile.html', {})
+    for entry in joined_races:
+        race = entry.race
+        stage_selections = PlayerSelection.objects.filter(race_participant=entry, stage__isnull=False).count()
+        has_backup = PlayerSelection.objects.filter(race_participant=entry, stage=None).exists()
+
+        races_data.append({
+            'race': race,
+            'team_name': profile.team_name,
+            'stage_selections': stage_selections,
+            'has_backup': has_backup,
+            'url_reference': race.url_reference,
+            'year': race.year,
+        })
+
+    return render(request, 'profile.html', {
+        'profile': profile,
+        'races_data': races_data,
+    })
 
 
 @login_required
