@@ -14,19 +14,19 @@
         - You <strong>cannot</strong> select this rider for your stages (and vice versa).
     </p>
 
-    {% if backup_selection and backup_selection.rider.id in dnf_riders %}
+    {% if backup_selection and backup_selection.rider.rider.id in dnf_riders %}
         <p style="color:red;"><strong>Warning:</strong> Your backup rider did not finish and should be replaced.</p>
     {% endif %}
 
     {% if backup_locked %}
         {% if backup_selection %}
-            <p><strong>Backup Rider:</strong> {{ backup_selection.rider.rider_name }}</p>
+            <p><strong>Backup Rider:</strong> {{ backup_selection.rider.rider.rider_name }}</p>
         {% else %}
             <p>No backup rider selected.</p>
         {% endif %}
     {% else %}
         {% if backup_selection %}
-            <p><strong>Backup Rider:</strong> {{ backup_selection.rider.rider_name }}</p>
+            <p><strong>Backup Rider:</strong> {{ backup_selection.rider.rider.rider_name }}</p>
             <button type="button" class="button open-modal-button" data-stage-id="">Change Backup Rider</button>
         {% else %}
             <button type="button" class="button open-modal-button" data-stage-id="">Select Backup Rider</button>
@@ -73,18 +73,18 @@
                     <span style="color:red;">Stage Canceled</span>
                 {% elif item.locked %}
                     {% if item.selection %}
-                        {{ item.selection.rider_name }}
+                        {{ item.selection.rider.rider_name }}
                     {% else %}
                         -
                     {% endif %}
                 {% else %}
                     {% if item.selection %}
-                        {{ item.selection.rider_name }} <br>
+                        {{ item.selection.rider.rider_name }} <br>
                         <button type="button" class="button open-modal-button" data-stage-id="{{ item.stage.id }}">Change</button>
                     {% else %}
                         <button type="button" class="button open-modal-button" data-stage-id="{{ item.stage.id }}">Select Rider</button>
                     {% endif %}
-                {% endif %}              
+                {% endif %}
             </td>
             <td>
                 {% if item.result %}

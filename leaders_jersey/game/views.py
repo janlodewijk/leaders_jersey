@@ -69,20 +69,20 @@ def rider_selection(request, race_slug, year):
         stage_id = request.POST.get('stage_id')
 
         if rider_id:
-            rider = Rider.objects.get(id=rider_id)
+            entry = get_object_or_404(StartlistEntry, rider_id=rider_id, race=race)
 
             if not stage_id:
                 PlayerSelection.objects.update_or_create(
                     race_participant=participant,
                     stage=None,
-                    defaults={'rider': rider}
+                    defaults={'rider': entry}
                 )
             else:
-                stage = Stage.objects.get(id=stage_id)
+                stage = get_object_or_404(Stage, id=stage_id)
                 PlayerSelection.objects.update_or_create(
                     race_participant=participant,
                     stage=stage,
-                    defaults={'rider': rider}
+                    defaults={'rider': entry}
                 )
 
             return redirect(request.path)
@@ -109,7 +109,7 @@ def rider_selection(request, race_slug, year):
     ).select_related('stage', 'rider')
 
     selection_lookup = {sel.stage_id: sel for sel in player_selections}
-    selected_stage_rider_ids = {sel.rider.id for sel in player_selections if sel.rider and sel.stage}
+    selected_stage_rider_ids = {sel.rider.rider.id for sel in player_selections if sel.rider and sel.stage}
 
     backup_selection = PlayerSelection.objects.filter(
         race_participant=participant,
@@ -140,10 +140,10 @@ def rider_selection(request, race_slug, year):
         used_fallback = False
 
         if selected_rider:
-            result = StageResult.objects.filter(stage=stage, rider=selected_rider).first()
+            result = StageResult.objects.filter(stage=stage, rider=selected_rider.rider).first()
 
         if not result and backup_selection and backup_selection.rider:
-            result = StageResult.objects.filter(stage=stage, rider=backup_selection.rider).first()
+            result = StageResult.objects.filter(stage=stage, rider=backup_selection.rider.rider).first()
             used_backup = result is not None
 
         if not result:
@@ -172,7 +172,7 @@ def rider_selection(request, race_slug, year):
     rider_usage = {}
     for selection in player_selections:
         if selection.rider:
-            rider_id = selection.rider.id
+            rider_id = selection.rider.rider.id
             rider_usage[rider_id] = rider_usage.get(rider_id, 0) + 1
 
     # --- Build modal data ---
@@ -182,7 +182,7 @@ def rider_selection(request, race_slug, year):
         team = entry.team or rider.team
 
         selection_count = rider_usage.get(rider.id, 0)
-        is_backup = backup_selection and backup_selection.rider and rider.id == backup_selection.rider.id
+        is_backup = backup_selection and backup_selection.rider and rider.id == backup_selection.rider.rider.id
         is_unavailable = is_backup or selection_count >= rider_limit or rider.id in selected_stage_rider_ids
 
         team_riders[team].append({
@@ -297,14 +297,14 @@ def leaderboard(request, race_slug, year):
         selections = PlayerSelection.objects.filter(
             race_participant=participant,
             stage__in=stages
-        ).select_related('stage', 'rider')
+        ).select_related('stage', 'rider__rider')
 
         backup_selection = PlayerSelection.objects.filter(
             race_participant=participant,
             stage=None
-        ).first()
+        ).select_related('rider__rider').first()
 
-        backup_rider = backup_selection.rider if backup_selection else None
+        backup_rider = backup_selection.rider.rider if backup_selection and backup_selection.rider else None
         total_time = timedelta(0)
 
         for stage in stages:
@@ -312,7 +312,7 @@ def leaderboard(request, race_slug, year):
             selection = next((s for s in selections if s.stage_id == stage.id), None)
 
             if selection and selection.rider:
-                result = StageResult.objects.filter(stage=stage, rider=selection.rider).first()
+                result = StageResult.objects.filter(stage=stage, rider=selection.rider.rider).first()
 
             if not result and backup_rider:
                 result = StageResult.objects.filter(stage=stage, rider=backup_rider).first()
@@ -343,6 +343,7 @@ def leaderboard(request, race_slug, year):
         'gc_data': gc_data,
         'race': race,
     })
+
 
 
 @require_POST
