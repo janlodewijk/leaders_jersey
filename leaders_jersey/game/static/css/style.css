@@ -486,3 +486,15 @@ select,
     text-align: center;
     display: inline-block;
 }
+
+.nav-link {
+    color: #d63384;
+    text-decoration: none;
+    font-weight: bold;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .nav-link:hover {
+    text-decoration: underline;
+  }
+  

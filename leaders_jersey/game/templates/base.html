@@ -18,7 +18,7 @@
     
                 {% if user.is_authenticated %}
                     <a href="/profile/">Profile</a>
-    
+                    <a href="/races/">Available races</a>
                     {% with user.race_participations.all as participations %}
                         {% if participations %}
                             <div class="dropdown">

@@ -14,7 +14,8 @@
           <th>Rank</th>
           <th>Player</th>
           <th>Team</th>
-          <th>Selected Rider</th>
+          <th>Last Selected Rider</th>
+          <th>Last Stage Time</th>
           <th>Total Time</th>
         </tr>
       </thead>
@@ -26,28 +27,8 @@
             </td>
             <td>{{ entry.player.username }}</td>
             <td>{{ entry.player.profile.team_name }}</td>
-            <td>
-              {% if item.is_canceled %}
-                  <span style="color:red;">Stage Canceled</span>
-              
-              {% elif not item.locked %}
-                  -  {# ✅ Before deadline, always show "-" — keeps selections hidden #}
-              
-              {% else %}
-                  {% if item.result %}
-                      {% if item.used_backup %}
-                          {{ backup_selection.rider.rider_name }} <span style="font-style: italic;">(Backup)</span>
-                      {% elif item.used_fallback %}
-                          {{ item.result.rider.rider_name }} <span style="font-style: italic;">(Last finisher)</span>
-                      {% else %}
-                          {{ item.selection.rider.rider_name }}
-                      {% endif %}
-                  {% else %}
-                      -  {# ✅ After deadline, but before result upload, show "-" if nothing was selected #}
-                  {% endif %}
-              {% endif %}
-          
-            </td>          
+            <td>{{ entry.selected_rider }}</td>
+            <td>{{ entry.latest_stage_time }}</td>            
             <td>{{ entry.total_time }}</td>
           </tr>
         {% empty %}

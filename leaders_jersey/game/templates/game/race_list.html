@@ -8,9 +8,11 @@
     <li>
       {{ race.race_name }} ({{ race.year }}) —
       {% if race.id in joined_race_ids %}
-        ✅ You’ve joined
+        ✅ You’ve joined —
+        <a href="{% url 'rider_selection' race.url_reference race.year %}" class="nav-link">Rider Selection</a> |
+        <a href="{% url 'leaderboard' race.url_reference race.year %}" class="nav-link">Leaderboard</a>
       {% else %}
-        <a href="{% url 'join_race' race.url_reference race.year %}">Join</a>
+        <a href="{% url 'join_race' race.url_reference race.year %}" class="nav-link">Join</a>
       {% endif %}
     </li>
   {% empty %}

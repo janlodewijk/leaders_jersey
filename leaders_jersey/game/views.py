@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 from django.db.models import Sum
 from collections import defaultdict
 from .forms import CustomUserCreationForm
+from django.utils.timezone import make_aware
 
 def register(request):
     if request.method == 'POST':
@@ -254,7 +255,7 @@ def save_selection(request, stage_id):
 @login_required
 def leaderboard(request, race_slug, year):
     race = get_object_or_404(Race, url_reference=race_slug, year=year)
-    stages = Stage.objects.filter(race=race)
+    stages = Stage.objects.filter(race=race).order_by('stage_date', 'stage_number')
 
     # GC standings from real race
     stages_with_gc = StageResult.objects.filter(
@@ -289,7 +290,16 @@ def leaderboard(request, race_slug, year):
             'gc_rank': result.gc_rank,
         })
 
-    # Player leaderboard using RaceParticipant
+    # Determine latest stage with passed deadline
+    now = timezone.now()
+    latest_locked_stage = None
+    for stage in reversed(stages):
+        if stage.start_time:
+            deadline = timezone.make_aware(datetime.combine(stage.stage_date, stage.start_time))
+            if now > deadline:
+                latest_locked_stage = stage
+                break
+
     participants = RaceParticipant.objects.filter(race=race).select_related('user')
     leaderboard_data = []
 
@@ -306,19 +316,37 @@ def leaderboard(request, race_slug, year):
 
         backup_rider = backup_selection.rider.rider if backup_selection and backup_selection.rider else None
         total_time = timedelta(0)
+        latest_rider_display = "-"
 
         for stage in stages:
             result = None
             selection = next((s for s in selections if s.stage_id == stage.id), None)
 
+            used_backup = False
+            used_fallback = False
+
             if selection and selection.rider:
                 result = StageResult.objects.filter(stage=stage, rider=selection.rider.rider).first()
-
-            if not result and backup_rider:
+            elif backup_rider:
                 result = StageResult.objects.filter(stage=stage, rider=backup_rider).first()
-
-            if not result:
+                if result:
+                    used_backup = True
+            else:
                 result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
+                if result:
+                    used_fallback = True
+
+
+            # Save latest rider display info if this is the latest locked stage
+            if latest_locked_stage and stage.id == latest_locked_stage.id:
+                if selection and selection.rider:
+                    latest_rider_display = selection.rider.rider.rider_name
+                elif used_backup and backup_selection:
+                    latest_rider_display = f"{backup_selection.rider.rider.rider_name} (Backup)"
+                elif used_fallback and result:
+                    latest_rider_display = f"{result.rider.rider.rider_name} (Last finisher)"
+                else:
+                    latest_rider_display = "-"
 
             if result:
                 total_time += result.finishing_time - result.bonus
@@ -329,11 +357,50 @@ def leaderboard(request, race_slug, year):
             if total_seconds else "0:00:00"
         )
 
+        # Identify latest past stage
+        past_stages = stages.filter(stage_date__lt=timezone.localdate()) | stages.filter(
+            stage_date=timezone.localdate(), start_time__lt=timezone.localtime().time()
+        )
+        latest_past_stage = past_stages.order_by('-stage_date', '-start_time').first()
+
+        latest_stage_time = "-"
+        if latest_past_stage:
+            deadline = make_aware(datetime.combine(latest_past_stage.stage_date, latest_past_stage.start_time))
+
+            if timezone.now() < deadline:
+                latest_stage_time = "-"
+            else:
+                # Get player's result for this stage
+                selection = next((s for s in selections if s.stage_id == latest_past_stage.id), None)
+                result = None
+                used_backup = False
+                used_fallback = False
+
+                if selection and selection.rider:
+                    result = StageResult.objects.filter(stage=latest_past_stage, rider=selection.rider.rider).first()
+
+                if not result and backup_rider:
+                    result = StageResult.objects.filter(stage=latest_past_stage, rider=backup_rider).first()
+                    used_backup = result is not None
+
+                if not result:
+                    result = StageResult.objects.filter(stage=stage).order_by('ranking').last()
+                    used_fallback = result is not None
+
+                if result and result.finishing_time:
+                    time = result.finishing_time if used_fallback else result.finishing_time - result.bonus
+                    total_seconds = time.total_seconds()
+                    latest_stage_time = f"{int(total_seconds // 3600)}:{int((total_seconds % 3600) // 60):02}:{int(total_seconds % 60):02}"
+                else:
+                    latest_stage_time = "Stage in progress"
+
         leaderboard_data.append({
             'player': participant.user,
             'team_name': participant.user.profile.team_name,
             'total_time': formatted_total_time,
+            'selected_rider': latest_rider_display,
             'num_selections': selections.count(),
+            'latest_stage_time': latest_stage_time,
         })
 
     leaderboard_data.sort(key=lambda x: x['total_time'])
@@ -343,7 +410,6 @@ def leaderboard(request, race_slug, year):
         'gc_data': gc_data,
         'race': race,
     })
-
 
 
 @require_POST
