@@ -21,5 +21,35 @@
             </form>
         {% endif %}
     </div>
+
+    <div class="joined-races-section">
+        <h3 style="margin-top: 40px;">📅 Your Races</h3>
+        {% if races_data %}
+            <table class="leaderboard-table" style="margin-top: 10px;">
+                <thead>
+                    <tr>
+                        <th>Race</th>
+                        <th>Selections</th>
+                        <th>Backup</th>
+                        <th colspan="2">Links</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for race in races_data %}
+                        <tr>
+                            <td>{{ race.race.race_name }} ({{ race.year }})</td>
+                            <td>{{ race.stage_selections }}</td>
+                            <td>{% if race.has_backup %}✅{% else %}❌{% endif %}</td>
+                            <td><a href="{% url 'rider_selection' race.url_reference race.year %}">📋 Selection</a></td>
+                            <td><a href="{% url 'leaderboard' race.url_reference race.year %}">🏆 Leaderboard</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>You haven’t joined any races yet.</p>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
+

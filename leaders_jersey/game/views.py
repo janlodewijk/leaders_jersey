@@ -4,14 +4,15 @@ from django.contrib import messages
 from django.contrib.auth.views import LoginView
 from django.contrib.auth import logout, login
 from django.contrib.auth.decorators import login_required
-from game.models import Race, Stage, Rider, PlayerSelection, StageResult
-from datetime import datetime, time, timedelta
+from game.models import Race, Stage, Rider, PlayerSelection, StageResult, RaceParticipant, StartlistEntry
+from datetime import datetime, date, timedelta
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
-import pandas as pd
+from django.db.models import Sum
 from collections import defaultdict
 from .forms import CustomUserCreationForm
+from django.utils.timezone import make_aware
 
 def register(request):
     if request.method == 'POST':
@@ -54,66 +55,75 @@ def profile(request):
 
 
 @login_required
-def rider_selection(request):
+def rider_selection(request, race_slug, year):
+    race = get_object_or_404(Race, url_reference=race_slug, year=year)
+
+    # Check if the user has joined this race
+    try:
+        participant = RaceParticipant.objects.get(user=request.user, race=race)
+    except RaceParticipant.DoesNotExist:
+        return redirect('join_race', race_slug=race_slug, year=year)
+
+    # Handle POST selection
     if request.method == 'POST':
         rider_id = request.POST.get('rider_id')
         stage_id = request.POST.get('stage_id')
 
         if rider_id:
-            rider = Rider.objects.get(id=rider_id)
+            entry = get_object_or_404(StartlistEntry, rider_id=rider_id, race=race)
 
             if not stage_id:
-                # Backup rider
                 PlayerSelection.objects.update_or_create(
-                    player=request.user,
+                    race_participant=participant,
                     stage=None,
-                    defaults={'rider': rider}
+                    defaults={'rider': entry}
                 )
             else:
-                # Stage rider
-                stage = Stage.objects.get(id=stage_id)
+                stage = get_object_or_404(Stage, id=stage_id)
                 PlayerSelection.objects.update_or_create(
-                    player=request.user,
+                    race_participant=participant,
                     stage=stage,
-                    defaults={'rider': rider}
+                    defaults={'rider': entry}
                 )
 
             return redirect(request.path)
 
-    # Get current race and stages
-    current_race = Race.objects.order_by('-year').first()
-    if current_race:
-        stages = Stage.objects.filter(race=current_race).order_by('stage_date', 'stage_number')
-    else:
-        stages = []
-
+    # Get stages for this race
+    stages = Stage.objects.filter(race=race).exclude(stage_number__isnull=True).order_by('stage_date', 'stage_number')
     race_length = len(stages)
     rider_limit = 1 if race_length <= 8 else 2 if race_length <= 14 else 3
 
-    riders = Rider.objects.filter(is_participating=True).order_by('start_number')
+    # Get riders from the startlist
+    entries = StartlistEntry.objects.filter(race=race).select_related('rider', 'team').order_by('start_number')
+    riders = [entry.rider for entry in entries]
+
     dnf_riders = StageResult.objects.filter(
-        stage__race=current_race,
+        stage__race=race,
         finishing_time__isnull=True
     ).values_list('rider_id', flat=True)
 
+    # Player selections
     player_selections = PlayerSelection.objects.filter(
-        player=request.user,
+        race_participant=participant,
         stage__in=stages,
         stage__is_canceled=False
     ).select_related('stage', 'rider')
 
-    selected_stage_rider_ids = set(sel.rider.id for sel in player_selections if sel.rider and sel.stage is not None)
     selection_lookup = {sel.stage_id: sel for sel in player_selections}
+    selected_stage_rider_ids = {sel.rider.rider.id for sel in player_selections if sel.rider and sel.stage}
 
-    backup_selection = PlayerSelection.objects.filter(player=request.user, stage=None).first()
+    backup_selection = PlayerSelection.objects.filter(
+        race_participant=participant,
+        stage=None
+    ).first()
+
     backup_rider_id = backup_selection.rider.id if backup_selection and backup_selection.rider else None
     backup_rider_dnf = backup_rider_id in dnf_riders if backup_rider_id else False
 
+    backup_locked = True
     if stages:
         stage1_start = timezone.make_aware(datetime.combine(stages[0].stage_date, stages[0].start_time))
         backup_locked = timezone.now() > stage1_start and not backup_rider_dnf
-    else:
-        backup_locked = True
 
     # --- Stage data ---
     stage_data = []
@@ -131,23 +141,15 @@ def rider_selection(request):
         used_fallback = False
 
         if selected_rider:
-            try:
-                result = StageResult.objects.get(stage=stage, rider=selected_rider)
-            except StageResult.DoesNotExist:
-                pass
+            result = StageResult.objects.filter(stage=stage, rider=selected_rider.rider).first()
 
-        if not result and selection and backup_selection and backup_selection.rider:
-            try:
-                result = StageResult.objects.get(stage=stage, rider=backup_selection.rider)
-                used_backup = True
-            except StageResult.DoesNotExist:
-                pass
+        if not result and backup_selection and backup_selection.rider:
+            result = StageResult.objects.filter(stage=stage, rider=backup_selection.rider.rider).first()
+            used_backup = result is not None
 
         if not result:
-            last_result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
-            if last_result:
-                result = last_result
-                used_fallback = True
+            result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
+            used_fallback = result is not None
 
         if result:
             if used_fallback:
@@ -167,30 +169,29 @@ def rider_selection(request):
             'is_canceled': stage.is_canceled,
         })
 
-    # --- Calculate rider usage ---
+    # --- Rider usage ---
     rider_usage = {}
     for selection in player_selections:
         if selection.rider:
-            rider_id = selection.rider.id
+            rider_id = selection.rider.rider.id
             rider_usage[rider_id] = rider_usage.get(rider_id, 0) + 1
 
-    # --- Build teams and riders for modal ---
+    # --- Build modal data ---
     team_riders = defaultdict(list)
-    for rider in riders:
+    for entry in entries:
+        rider = entry.rider
+        team = entry.team or rider.team
+
         selection_count = rider_usage.get(rider.id, 0)
-        is_backup = backup_selection and backup_selection.rider and rider.id == backup_selection.rider.id
+        is_backup = backup_selection and backup_selection.rider and rider.id == backup_selection.rider.rider.id
+        is_unavailable = is_backup or selection_count >= rider_limit or rider.id in selected_stage_rider_ids
 
-        # ✨ Mark unavailable riders
-        is_unavailable = False
-        if is_backup or selection_count >= rider_limit or rider.id in selected_stage_rider_ids:
-            is_unavailable = True
-
-        team_riders[rider.team].append({
+        team_riders[team].append({
             'id': rider.id,
-            'start_number': rider.start_number,
+            'start_number': entry.start_number,
             'rider_name': rider.rider_name,
-            'team_name': rider.team.name if rider.team else "Unknown",
-            'team_code': rider.team.code if rider.team else "UNK",
+            'team_name': team.name if team else "Unknown",
+            'team_code': team.code if team else "UNK",
             'is_dnf': rider.id in dnf_riders,
             'is_backup': is_backup,
             'selection_count': selection_count,
@@ -200,13 +201,15 @@ def rider_selection(request):
     backup_riders_data = []
     sorted_teams = sorted(
         team_riders.items(),
-        key=lambda item: min(r['start_number'] for r in item[1])
+        key=lambda item: min(
+            [r['start_number'] for r in item[1] if r['start_number'] is not None] or [9999]
+        )
     )
 
-    for team_name, members in sorted_teams:
+    for team, members in sorted_teams:
         backup_riders_data.append({
-            'team': team_name.name if hasattr(team_name, 'name') else str(team_name),
-            'riders': sorted(members, key=lambda x: x['start_number'])
+            'team': team.name if team else str(team),
+            'riders': sorted(members, key=lambda x: x['start_number'] or 9999)
         })
 
     return render(request, 'rider_selection.html', {
@@ -216,6 +219,7 @@ def rider_selection(request):
         'backup_locked': backup_locked,
         'backup_riders': backup_riders_data,
         'rider_limit': rider_limit,
+        'race': race,
     })
 
 
@@ -248,119 +252,155 @@ def save_selection(request, stage_id):
     return redirect('rider_selection')
 
 
-from datetime import timedelta
-
 @login_required
-def leaderboard(request):
-    current_race = Race.objects.order_by('-year').first()
-    stages = Stage.objects.filter(race=current_race)
+def leaderboard(request, race_slug, year):
+    race = get_object_or_404(Race, url_reference=race_slug, year=year)
+    stages = Stage.objects.filter(race=race).order_by('stage_date', 'stage_number')
 
-    # Get the latest stage that has GC data
+    # GC standings from real race
     stages_with_gc = StageResult.objects.filter(
         stage__in=stages,
         gc_rank__isnull=False
     ).values('stage').distinct()
 
+    most_recent_stage = None
     if stages_with_gc:
-        latest_stage_with_gc_id = max(stage['stage'] for stage in stages_with_gc)
-        most_recent_stage = Stage.objects.get(id=latest_stage_with_gc_id)
-    else:
-        most_recent_stage = None
+        latest_stage_id = max(stage['stage'] for stage in stages_with_gc)
+        most_recent_stage = Stage.objects.get(id=latest_stage_id)
 
-    # Get top 10 GC riders after that stage
-    top_10_riders = StageResult.objects.filter(
-        stage=most_recent_stage,
-        gc_rank__isnull=False
-    ).order_by('gc_rank')[:10]
+    top_10_riders = []
+    if most_recent_stage:
+        top_10_riders = StageResult.objects.filter(
+            stage=most_recent_stage,
+            gc_rank__isnull=False
+        ).order_by('gc_rank')[:10]
 
-    # ✅ Collect GC data for display (with pretty formatting!)
     gc_data = []
     for result in top_10_riders:
-        if result.gc_time:
-            total_seconds = result.gc_time.total_seconds()
-            hours = int(total_seconds // 3600)
-            minutes = int((total_seconds % 3600) // 60)
-            seconds = int(total_seconds % 60)
-            formatted_gc_time = f"{hours}:{minutes:02}:{seconds:02}"
-        else:
-            formatted_gc_time = "-"
-
-        gc_rider_data = {
+        time = result.gc_time
+        formatted_gc_time = (
+            f"{int(time.total_seconds() // 3600)}:"
+            f"{int((time.total_seconds() % 3600) // 60):02}:"
+            f"{int(time.total_seconds() % 60):02}"
+        ) if time else "-"
+        gc_data.append({
             'name': result.rider.rider_name,
             'team': result.rider.team.code if result.rider.team else "UNK",
             'gc_time': formatted_gc_time,
             'gc_rank': result.gc_rank,
-        }
+        })
 
-        gc_data.append(gc_rider_data)
+    # Determine latest stage with passed deadline
+    now = timezone.now()
+    latest_locked_stage = None
+    for stage in reversed(stages):
+        if stage.start_time:
+            deadline = timezone.make_aware(datetime.combine(stage.stage_date, stage.start_time))
+            if now > deadline:
+                latest_locked_stage = stage
+                break
 
-    # 🎮 Game leaderboard
-    users_with_selections = User.objects.filter(
-        selections__stage__in=stages
-    ).distinct()
-
+    participants = RaceParticipant.objects.filter(race=race).select_related('user')
     leaderboard_data = []
 
-    for user in users_with_selections:
-        total_time = timedelta(0)
-
-        # Get selections and backup for this user
+    for participant in participants:
         selections = PlayerSelection.objects.filter(
-            player=user,
+            race_participant=participant,
             stage__in=stages
-        ).select_related('stage', 'rider')
+        ).select_related('stage', 'rider__rider')
 
-        backup_selection = PlayerSelection.objects.filter(player=user, stage=None).first()
-        backup_rider = backup_selection.rider if backup_selection else None
+        backup_selection = PlayerSelection.objects.filter(
+            race_participant=participant,
+            stage=None
+        ).select_related('rider__rider').first()
 
-        # Lookup per stage
-        stage_lookup = {s.stage_id: s for s in selections}
+        backup_rider = backup_selection.rider.rider if backup_selection and backup_selection.rider else None
+        total_time = timedelta(0)
+        latest_rider_display = "-"
 
         for stage in stages:
             result = None
+            selection = next((s for s in selections if s.stage_id == stage.id), None)
+
+            used_backup = False
             used_fallback = False
 
-            # 1. Check selected rider
-            selection = stage_lookup.get(stage.id)
             if selection and selection.rider:
-                try:
-                    result = StageResult.objects.get(stage=stage, rider=selection.rider)
-                except StageResult.DoesNotExist:
-                    result = None
-
-            # 2. Check backup rider
-            if not result and backup_rider:
-                try:
-                    result = StageResult.objects.get(stage=stage, rider=backup_rider)
-                except StageResult.DoesNotExist:
-                    result = None
-
-            # 3. Fallback: last classified finisher
-            if not result:
+                result = StageResult.objects.filter(stage=stage, rider=selection.rider.rider).first()
+            elif backup_rider:
+                result = StageResult.objects.filter(stage=stage, rider=backup_rider).first()
+                if result:
+                    used_backup = True
+            else:
                 result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
-                used_fallback = True
+                if result:
+                    used_fallback = True
 
-            # 4. Add time
-            if result:
-                if used_fallback:
-                    total_time += result.finishing_time  # no bonus
+
+            # Save latest rider display info if this is the latest locked stage
+            if latest_locked_stage and stage.id == latest_locked_stage.id:
+                if selection and selection.rider:
+                    latest_rider_display = selection.rider.rider.rider_name
+                elif used_backup and backup_selection:
+                    latest_rider_display = f"{backup_selection.rider.rider.rider_name} (Backup)"
+                elif used_fallback and result:
+                    latest_rider_display = f"{result.rider.rider.rider_name} (Last finisher)"
                 else:
-                    total_time += result.finishing_time - result.bonus
-        total_seconds = total_time.total_seconds()
+                    latest_rider_display = "-"
 
-        if total_seconds > 0:
-            hours = int(total_seconds // 3600)
-            minutes = int((total_seconds % 3600) // 60)
-            seconds = int(total_seconds % 60)
-            formatted_total_time = f"{hours}:{minutes:02}:{seconds:02}"
-        else:
-            formatted_total_time = "0:00:00"
+            if result:
+                total_time += result.finishing_time - result.bonus
+
+        total_seconds = total_time.total_seconds()
+        formatted_total_time = (
+            f"{int(total_seconds // 3600)}:{int((total_seconds % 3600) // 60):02}:{int(total_seconds % 60):02}"
+            if total_seconds else "0:00:00"
+        )
+
+        # Identify latest past stage
+        past_stages = stages.filter(stage_date__lt=timezone.localdate()) | stages.filter(
+            stage_date=timezone.localdate(), start_time__lt=timezone.localtime().time()
+        )
+        latest_past_stage = past_stages.order_by('-stage_date', '-start_time').first()
+
+        latest_stage_time = "-"
+        if latest_past_stage:
+            deadline = make_aware(datetime.combine(latest_past_stage.stage_date, latest_past_stage.start_time))
+
+            if timezone.now() < deadline:
+                latest_stage_time = "-"
+            else:
+                # Get player's result for this stage
+                selection = next((s for s in selections if s.stage_id == latest_past_stage.id), None)
+                result = None
+                used_backup = False
+                used_fallback = False
+
+                if selection and selection.rider:
+                    result = StageResult.objects.filter(stage=latest_past_stage, rider=selection.rider.rider).first()
+
+                if not result and backup_rider:
+                    result = StageResult.objects.filter(stage=latest_past_stage, rider=backup_rider).first()
+                    used_backup = result is not None
+
+                if not result:
+                    result = StageResult.objects.filter(stage=stage).order_by('ranking').last()
+                    used_fallback = result is not None
+
+                if result and result.finishing_time:
+                    time = result.finishing_time if used_fallback else result.finishing_time - result.bonus
+                    total_seconds = time.total_seconds()
+                    latest_stage_time = f"{int(total_seconds // 3600)}:{int((total_seconds % 3600) // 60):02}:{int(total_seconds % 60):02}"
+                else:
+                    latest_stage_time = "Stage in progress"
 
         leaderboard_data.append({
-            'player': user,
-            'team_name': user.profile.team_name,
+            'player': participant.user,
+            'team_name': participant.user.profile.team_name,
             'total_time': formatted_total_time,
-            'num_selections': selections.count()
+            'selected_rider': latest_rider_display,
+            'num_selections': selections.count(),
+            'latest_stage_time': latest_stage_time,
         })
 
     leaderboard_data.sort(key=lambda x: x['total_time'])
@@ -368,8 +408,8 @@ def leaderboard(request):
     return render(request, 'leaderboard.html', {
         'leaderboard_data': leaderboard_data,
         'gc_data': gc_data,
+        'race': race,
     })
-
 
 
 @require_POST
@@ -399,14 +439,69 @@ def save_backup_selection(request):
     return redirect('rider_selection')
 
 
+from django.shortcuts import redirect
+
 @login_required
 def profile(request):
+    profile = request.user.profile
+
+    # 📝 Handle form submission
     if request.method == 'POST':
-        team_name = request.POST.get('team_name')
-        request.user.profile.team_name = team_name
-        request.user.profile.save()
-        messages.success(request, '✅ Team name updated!')
+        new_team_name = request.POST.get('team_name', '').strip()
+        if new_team_name:
+            profile.team_name = new_team_name
+            profile.save()
+        return redirect('profile')  # prevent resubmission on refresh
 
-        return redirect('profile')
+    # 🧾 Build joined races section
+    joined_races = RaceParticipant.objects.filter(user=request.user).select_related('race')
+    races_data = []
 
-    return render(request, 'profile.html', {})
+    for entry in joined_races:
+        race = entry.race
+        stage_selections = PlayerSelection.objects.filter(race_participant=entry, stage__isnull=False).count()
+        has_backup = PlayerSelection.objects.filter(race_participant=entry, stage=None).exists()
+
+        races_data.append({
+            'race': race,
+            'team_name': profile.team_name,
+            'stage_selections': stage_selections,
+            'has_backup': has_backup,
+            'url_reference': race.url_reference,
+            'year': race.year,
+        })
+
+    return render(request, 'profile.html', {
+        'profile': profile,
+        'races_data': races_data,
+    })
+
+
+@login_required
+def join_race(request, race_slug, year):
+    race = get_object_or_404(Race, url_reference=race_slug, year=year)
+
+    participant, created = RaceParticipant.objects.get_or_create(
+        user=request.user,
+        race=race
+    )
+
+    if created:
+        print(f"{request.user.username} joined {race}")
+    else:
+        print(f"{request.user.username} is already a participant in {race}")
+    
+    return redirect('race_list')
+
+
+@login_required
+def race_list(request):
+    today = date.today()
+    upcoming_races = Race.objects.filter(start_date__gte=today).order_by('start_date')
+
+    joined_races = RaceParticipant.objects.filter(user=request.user).values_list('race_id', flat=True)
+
+    return render(request, 'game/race_list.html', {
+        'upcoming_races': upcoming_races,
+        'joined_race_ids': set(joined_races)
+    })

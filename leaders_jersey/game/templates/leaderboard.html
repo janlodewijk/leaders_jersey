@@ -14,6 +14,8 @@
           <th>Rank</th>
           <th>Player</th>
           <th>Team</th>
+          <th>Last Selected Rider</th>
+          <th>Last Stage Time</th>
           <th>Total Time</th>
         </tr>
       </thead>
@@ -25,6 +27,8 @@
             </td>
             <td>{{ entry.player.username }}</td>
             <td>{{ entry.player.profile.team_name }}</td>
+            <td>{{ entry.selected_rider }}</td>
+            <td>{{ entry.latest_stage_time }}</td>            
             <td>{{ entry.total_time }}</td>
           </tr>
         {% empty %}

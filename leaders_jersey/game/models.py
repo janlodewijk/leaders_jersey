@@ -1,14 +1,19 @@
 from django.db import models
 from django.contrib.auth.models import User
 from datetime import timedelta, time
+from django.db.models import Q
 
 
 class Race(models.Model):
     race_name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100)
     year = models.PositiveSmallIntegerField(default=2025)
     start_date = models.DateField()
     end_date = models.DateField()
     url_reference = models.CharField(max_length=50, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('slug', 'year')  # ensures URL uniqueness per year
 
     def __str__(self):
         return f"{self.race_name} ({self.year})"
@@ -56,7 +61,6 @@ class Rider(models.Model):
     nationality = models.CharField(max_length=100)
     external_id = models.CharField(max_length=100, unique=True)
     start_number = models.PositiveSmallIntegerField(null=True, blank=True)
-    is_participating = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['start_number']
@@ -76,27 +80,6 @@ class StageResult(models.Model):
 
     def __str__(self):
         return f"{self.stage} - {self.rider}"
-
-
-class PlayerSelection(models.Model):
-    player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='selections')
-    stage = models.ForeignKey(Stage, on_delete=models.CASCADE, null=True, blank=True, related_name='player_selections')
-    rider = models.ForeignKey(Rider, on_delete=models.CASCADE)
-    selected_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        constraints = [
-            # Only one rider per stage
-            models.UniqueConstraint(fields=['player', 'stage'], name='unique_stage_selection'),
-            # Only one backup rider for the whole race, if selected stage rider did not finish
-            models.UniqueConstraint(fields=['player'], condition=models.Q(stage__isnull=True), name='unique_backup_selection')
-        ]
-
-    def __str__(self):
-        if self.stage:
-            return f"{self.player.username} - Stage {self.stage.stage_number}: {self.rider.rider_name}"
-        else:
-            return f"{self.player.username} - Backup rider: {self.rider.rider_name}"
         
 
 class Profile(models.Model):
@@ -105,3 +88,51 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+
+
+class StartlistEntry(models.Model):
+    race = models.ForeignKey(Race, on_delete=models.CASCADE, related_name='startlist_entries')
+    rider = models.ForeignKey(Rider, on_delete=models.CASCADE, related_name='startlist_entries')
+    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
+    start_number = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('race', 'rider')
+        ordering = ['start_number']
+
+    def __str__(self):
+        return f"{self.rider.rider_name} - {self.race.race_name} ({self.race.year})"
+
+
+class RaceParticipant(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='race_participations')
+    race = models.ForeignKey(Race, on_delete=models.CASCADE, related_name='participants')
+    backup_rider = models.ForeignKey(StartlistEntry, null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        unique_together = ('user', 'race')
+    
+    def __str__(self):
+        return f"{self.user.username} in {self.race.race_name} ({self.race.year})"
+    
+
+class PlayerSelection(models.Model):
+    race_participant = models.ForeignKey(RaceParticipant, on_delete=models.CASCADE, related_name='selections')
+    stage = models.ForeignKey(Stage, on_delete=models.CASCADE, null=True, blank=True, related_name='player_selections')
+    rider = models.ForeignKey(StartlistEntry, on_delete=models.CASCADE)
+    selected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['race_participant', 'stage'], name='unique_stage_selection'),
+            models.UniqueConstraint(fields=['race_participant'], condition=Q(stage__isnull=True), name='unique_backup_selection')
+        ]
+
+    def __str__(self):
+        if self.stage:
+            return f"{self.race_participant.user.username} - Stage {self.stage.stage_number}: {self.rider.rider.rider_name}"
+        else:
+            return f"{self.race_participant.user.username} - Backup rider: {self.rider.rider.rider_name}"
+
+
+
