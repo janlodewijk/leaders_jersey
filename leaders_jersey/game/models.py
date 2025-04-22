@@ -135,4 +135,8 @@ class PlayerSelection(models.Model):
             return f"{self.race_participant.user.username} - Backup rider: {self.rider.rider.rider_name}"
 
 
-
+class PlayerUciPoints(models.Model):
+    race_participant = models.ForeignKey(RaceParticipant, on_delete=models.CASCADE)
+    uci_points = models.SmallIntegerField(blank=True, null=True)
+    gc_rank = models.SmallIntegerField()
+    timestamp = models.DateTimeField(auto_now_add=True)

@@ -505,3 +505,8 @@ def race_list(request):
         'upcoming_races': upcoming_races,
         'joined_race_ids': set(joined_races)
     })
+
+
+@login_required
+def assign_uci_points(request):
+    pass
