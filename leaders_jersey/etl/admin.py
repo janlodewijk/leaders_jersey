@@ -12,7 +12,6 @@ from django.template.loader import get_template
 from django.urls import path
 from django.shortcuts import redirect
 from django.utils.html import format_html
-from django.template.response import TemplateResponse
 
 from etl.logging_config import logger  # ✅ in case you want to log debugging info
 import pprint  # for optional pretty-print logging

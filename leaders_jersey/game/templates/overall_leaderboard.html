@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>🏅 Overall UCI Points Leaderboard – {{ year }} 🏅</h2>
+
+<table class="leaderboard-table">
+    <thead>
+        <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Team</th>
+            <th>Total UCI Points</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in total_uci_points %}
+            <tr {% if entry.username == request.user.username %}style="font-weight: bold"{% endif %}>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ entry.username }}</td>
+                <td>{{ entry.team_name }}</td>
+                <td>{{ entry.total_points }}</td>
+            </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No UCI points have been assigned yet.</td>
+        </tr>
+        {% endfor %}    
+    </tbody>
+</table>
+
+{% endblock %}

@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.views import LoginView
 from django.contrib.auth import logout, login
 from django.contrib.auth.decorators import login_required
-from game.models import Race, Stage, Rider, PlayerSelection, StageResult, RaceParticipant, StartlistEntry
+from game.models import Race, Stage, Rider, PlayerSelection, StageResult, RaceParticipant, StartlistEntry, PlayerUciPoints
 from datetime import datetime, date, timedelta
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -508,5 +508,26 @@ def race_list(request):
 
 
 @login_required
-def assign_uci_points(request):
-    pass
+def total_uci_points(request):
+    current_year = date.today().year
+
+    total_uci_points = (
+        PlayerUciPoints.objects
+        .filter(timestamp__year=current_year)
+        .select_related('race_participant__user')
+        .values('race_participant__user__id')
+        .annotate(total_points=Sum('uci_points'))
+        .order_by('-total_points')
+    )
+
+    # Collect usernames and team names
+    for entry in total_uci_points:
+        user_id = entry['race_participant__user__id']
+        user = User.objects.get(id=user_id)
+        entry['username'] = user.username
+        entry['teamname'] = user.profile.team_name if hasattr(user, 'profile') else ""
+
+    return render(request, 'overall_leaderboard.html', {
+        'total_uci_points': total_uci_points,
+        'year': current_year,
+    })
