@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Rider, Race, Stage, StageResult, Profile, Team, StartlistEntry
+from .models import Rider, Race, Stage, StageResult, Profile, Team, StartlistEntry, PlayerUciPoints
 
 # Register your models here.
 
@@ -44,3 +44,5 @@ class StartlistEntryAdmin(admin.ModelAdmin):
 
     def team_name(self, obj):
         return obj.team.name if obj.team else "-"
+
+admin.site.register(PlayerUciPoints)

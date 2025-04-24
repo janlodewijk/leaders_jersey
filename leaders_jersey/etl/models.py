@@ -15,3 +15,11 @@ class ETLRun(models.Model):
 
     def __str__(self):
         return f"{self.get_etl_type_display()} - {self.race.race_name} ({self.race.year})"
+    
+
+class UciPointsAssignment(models.Model):
+    race = models.ForeignKey(Race, on_delete=models.CASCADE)
+    triggered_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Assign UCI  points for {self.race}"

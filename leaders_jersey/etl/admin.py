@@ -1,5 +1,7 @@
 from django.contrib import admin, messages
-from .models import ETLRun
+
+from etl.load.load_uci_points import assign_uci_points
+from .models import ETLRun, UciPointsAssignment
 from etl.extract.extract_stage import extract_stage_info, extract_stage_results
 from etl.transform.transform_stage_info import transform_stage_info, transform_stage_results
 from etl.load.load_stage_info import load_stage_info, load_stage_results
@@ -7,6 +9,10 @@ from etl.extract.extract_startlist import extract_startlist
 from etl.transform.transform_startlist import transform_startlist
 from etl.load.load_startlist import load_startlist
 from django.template.loader import get_template
+from django.urls import path
+from django.shortcuts import redirect
+from django.utils.html import format_html
+from django.template.response import TemplateResponse
 
 from etl.logging_config import logger  # ✅ in case you want to log debugging info
 import pprint  # for optional pretty-print logging
@@ -67,3 +73,19 @@ class ETLRunAdmin(admin.ModelAdmin):
 
 
 admin.site.register(ETLRun, ETLRunAdmin)
+
+
+@admin.register(UciPointsAssignment)
+class UciPointsAssignmentAdmin(admin.ModelAdmin):
+    list_display = ('race', 'triggered_at')
+    actions = ['run_uci_points_assignment']
+
+    def run_uci_points_assignment(self, request, queryset):
+        for obj in queryset:
+            try:
+                assign_uci_points(obj.race.url_reference, obj.race)
+                self.message_user(request, f"UCI points assigned for {obj.race}", messages.SUCCESS)
+            except Exception as e:
+                self.message_user(request, f"Failed for {obj.race}: {e}", messages.ERROR)
+    
+    run_uci_points_assignment.short_description = "Run UCI points assignment"

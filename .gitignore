@@ -25,3 +25,6 @@ Thumbs.db
 # IDEs and editors
 .vscode/
 .idea/
+
+#uci points data
+uci_points/
