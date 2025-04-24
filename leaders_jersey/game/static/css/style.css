@@ -296,6 +296,10 @@ select,
     vertical-align: middle;
 }
 
+.nav-right a {
+    margin-left: 15px;
+}
+
 .dropbtn {
     background: none;
     border: none;
