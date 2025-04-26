@@ -53,6 +53,15 @@ def load_stage_info(transformed_stage_info):
         logger.error(f"Failed to load stage info to database: {e}")
 
 
+def clean_time(value):
+    if pd.isna(value) or value in ['–', '-', '']:
+        return None
+    if isinstance(value, timedelta):
+        return value
+    # Add optional parsing here if it's a string like "4:42:39"
+    return timedelta(seconds=value.total_seconds()) if hasattr(value, "total_seconds") else None
+
+
 def load_stage_results(transformed_stage_results):
     try:
         for index, row in transformed_stage_results.iterrows():
@@ -60,7 +69,7 @@ def load_stage_results(transformed_stage_results):
             year = row['year']
             stage_number = row['stage_number']
             external_id = row['external_id']
-            finishing_time = row['finishing_time']
+            finishing_time = clean_time(row['finishing_time'])
             ranking = row['ranking']
             bonus = row['bonus']
             gc_rank = row.get('gc_rank')
@@ -84,15 +93,15 @@ def load_stage_results(transformed_stage_results):
                 logger.warning(f"Rider {external_id} not found. Skipping.")
                 continue
 
+
             # ✅ CONVERT EVERYTHING PROPERLY
-            finishing_time = None if pd.isna(finishing_time) else timedelta(seconds=finishing_time.total_seconds())
             bonus = None if pd.isna(bonus) else timedelta(seconds=bonus.total_seconds())
             ranking = None if pd.isna(ranking) else ranking
             gc_rank = None if pd.isna(gc_rank) else gc_rank
             gc_time = None if pd.isna(gc_time) else timedelta(seconds=gc_time.total_seconds())
 
             # Save
-            result_obj, created = StageResult.objects.get_or_create(
+            StageResult.objects.update_or_create(
                 stage=stage_obj,
                 rider=rider_obj,
                 defaults={
@@ -104,13 +113,6 @@ def load_stage_results(transformed_stage_results):
                 }
             )
 
-            if not created:
-                result_obj.finishing_time = finishing_time
-                result_obj.ranking = ranking
-                result_obj.bonus = bonus
-                result_obj.gc_rank = gc_rank
-                result_obj.gc_time = gc_time
-                result_obj.save()
         
         logger.info(f"Successfully loaded stage results to database")
     

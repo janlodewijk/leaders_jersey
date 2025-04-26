@@ -99,7 +99,7 @@ def rider_selection(request, race_slug, year):
 
     dnf_riders = StageResult.objects.filter(
         stage__race=race,
-        finishing_time__isnull=True
+        ranking__isnull=True
     ).values_list('rider_id', flat=True)
 
     # Player selections
@@ -184,7 +184,12 @@ def rider_selection(request, race_slug, year):
 
         selection_count = rider_usage.get(rider.id, 0)
         is_backup = backup_selection and backup_selection.rider and rider.id == backup_selection.rider.rider.id
-        is_unavailable = is_backup or selection_count >= rider_limit or rider.id in selected_stage_rider_ids
+        is_unavailable = (
+            is_backup
+            or selection_count >= rider_limit
+            or rider.id in selected_stage_rider_ids
+            or rider.id in dnf_riders
+        )
 
         team_riders[team].append({
             'id': rider.id,
@@ -280,7 +285,7 @@ def leaderboard(request, race_slug, year):
         time = result.gc_time
         formatted_gc_time = (
             f"{int(time.total_seconds() // 3600)}:"
-            f"{int((time.total_seconds() % 3600) // 60):02}:"
+            f"{int((time.total_seconds() % 3600) // 60):02}:" 
             f"{int(time.total_seconds() % 60):02}"
         ) if time else "-"
         gc_data.append({
@@ -300,6 +305,18 @@ def leaderboard(request, race_slug, year):
                 latest_locked_stage = stage
                 break
 
+    # Check if race is finished and uci points assigned
+    final_stage = stages.last()
+    race_finished = StageResult.objects.filter(stage=final_stage).exists()
+
+    uci_points_assigned = PlayerUciPoints.objects.filter(race_participant__race=race).exists()
+    uci_points_dict = {}  # <-- always define empty dict first
+
+    if race_finished and uci_points_assigned:
+        uci_points_entries = PlayerUciPoints.objects.filter(race_participant__race=race).values_list('race_participant__user_id', 'uci_points')
+        uci_points_dict = dict(uci_points_entries)
+
+    # Build leaderboard
     participants = RaceParticipant.objects.filter(race=race).select_related('user')
     leaderboard_data = []
 
@@ -336,8 +353,7 @@ def leaderboard(request, race_slug, year):
                 if result:
                     used_fallback = True
 
-
-            # Save latest rider display info if this is the latest locked stage
+            # Save latest rider display if this is the latest locked stage
             if latest_locked_stage and stage.id == latest_locked_stage.id:
                 if selection and selection.rider:
                     latest_rider_display = selection.rider.rider.rider_name
@@ -370,7 +386,6 @@ def leaderboard(request, race_slug, year):
             if timezone.now() < deadline:
                 latest_stage_time = "-"
             else:
-                # Get player's result for this stage
                 selection = next((s for s in selections if s.stage_id == latest_past_stage.id), None)
                 result = None
                 used_backup = False
@@ -394,14 +409,19 @@ def leaderboard(request, race_slug, year):
                 else:
                     latest_stage_time = "Stage in progress"
 
-        leaderboard_data.append({
+        entry = {
             'player': participant.user,
             'team_name': participant.user.profile.team_name,
             'total_time': formatted_total_time,
             'selected_rider': latest_rider_display,
             'num_selections': selections.count(),
             'latest_stage_time': latest_stage_time,
-        })
+        }
+
+        if race_finished and uci_points_assigned:
+            entry['uci_points'] = uci_points_dict.get(participant.user.id)
+
+        leaderboard_data.append(entry)
 
     leaderboard_data.sort(key=lambda x: x['total_time'])
 

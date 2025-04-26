@@ -17,6 +17,9 @@
           <th>Last Selected Rider</th>
           <th>Last Stage Time</th>
           <th>Total Time</th>
+          {% if leaderboard_data.0.uci_points is not None %}
+            <th style="text-align: right;">UCI Points</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
@@ -26,14 +29,23 @@
               {% if forloop.counter == 1 %}👑{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}{{ forloop.counter }}{% endif %}
             </td>
             <td>{{ entry.player.username }}</td>
-            <td>{{ entry.player.profile.team_name }}</td>
+            <td>{{ entry.team_name }}</td>
             <td>{{ entry.selected_rider }}</td>
             <td>{{ entry.latest_stage_time }}</td>            
             <td>{{ entry.total_time }}</td>
+            {% if leaderboard_data.0.uci_points is not None %}
+              <td style="text-align: right;">
+                {% if entry.uci_points %}
+                  {{ entry.uci_points }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+            {% endif %}
           </tr>
         {% empty %}
           <tr>
-            <td colspan="4">No player data available yet.</td>
+            <td colspan="7">No player data available yet.</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -59,7 +71,7 @@
             <td>{{ rider.gc_time }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="4">No GC data available.</td></tr>
+          <tr><td colspan="3">No GC data available.</td></tr>
         {% endfor %}
       </tbody>
     </table>
