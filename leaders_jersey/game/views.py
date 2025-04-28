@@ -534,7 +534,6 @@ def total_uci_points(request):
     total_uci_points = (
         PlayerUciPoints.objects
         .filter(timestamp__year=current_year)
-        .select_related('race_participant__user')
         .values('race_participant__user__id')
         .annotate(total_points=Sum('uci_points'))
         .order_by('-total_points')
@@ -546,8 +545,35 @@ def total_uci_points(request):
         user = User.objects.get(id=user_id)
         entry['username'] = user.username
         entry['teamname'] = user.profile.team_name if hasattr(user, 'profile') else ""
+        entry['user_id'] = user.id
+
+    # Prepare race-by-race details
+    player_details = {}
+
+    details_queryset = (
+        PlayerUciPoints.objects
+        .filter(timestamp__year=current_year)
+        .select_related('race_participant__user', 'race_participant__race')
+    )
+
+    for result in details_queryset:
+        user_id = result.race_participant.user.id
+        race_name = result.race_participant.race.race_name
+        gc_rank = result.gc_rank
+        uci_points = result.uci_points
+
+        if user_id not in player_details:
+            player_details[user_id] = []
+
+        player_details[user_id].append({
+            'race_name': race_name,
+            'gc_rank': gc_rank,
+            'uci_points': uci_points,
+        })
 
     return render(request, 'overall_leaderboard.html', {
         'total_uci_points': total_uci_points,
         'year': current_year,
+        'player_details': player_details,
     })
+

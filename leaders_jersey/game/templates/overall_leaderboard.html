@@ -9,7 +9,9 @@
             <th>Rank</th>
             <th>Player</th>
             <th>Team</th>
-            <th>Total UCI Points</th>
+            {% if total_uci_points.0.total_points is not None %}
+                <th>UCI Points</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody>
@@ -17,15 +19,103 @@
             <tr {% if entry.username == request.user.username %}style="font-weight: bold"{% endif %}>
                 <td>{{ forloop.counter }}</td>
                 <td>{{ entry.username }}</td>
-                <td>{{ entry.team_name }}</td>
-                <td>{{ entry.total_points }}</td>
+                <td>{{ entry.teamname }}</td>
+                {% if total_uci_points.0.total_points is not None %}
+                    <td>
+                        {% if entry.total_points %}
+                            <a href="javascript:void(0);" 
+                               class="uci-points-link" 
+                               data-user-id="{{ entry.user_id }}">
+                               {{ entry.total_points }}
+                            </a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                {% endif %}
             </tr>
         {% empty %}
-        <tr>
-            <td colspan="4">No UCI points have been assigned yet.</td>
-        </tr>
-        {% endfor %}    
+            <tr>
+                <td colspan="4">No UCI points have been assigned yet.</td>
+            </tr>
+        {% endfor %}
     </tbody>
 </table>
+
+<!-- Modal for UCI points details -->
+<div id="uciModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h3>Ranking and UCI points Details</h3>
+        <table id="uciDetailsTable">
+            <thead>
+                <tr>
+                    <th>Race</th>
+                    <th>GC Rank</th>
+                    <th>UCI Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- JS will fill this -->
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+
+{{ player_details|json_script:"player-details-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('uciModal');
+    const closeButton = document.querySelector('.close-button');
+    const tableBody = document.getElementById('uciDetailsTable').querySelector('tbody');
+
+    const playerDetails = JSON.parse(document.getElementById('player-details-data').textContent);
+
+    function openModal(userId) {
+        const details = playerDetails[userId];
+        tableBody.innerHTML = '';
+
+        if (details) {
+            details.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${entry.race_name}</td>
+                    <td>${entry.gc_rank}</td>
+                    <td>${entry.uci_points}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="3">No races found</td>';
+            tableBody.appendChild(row);
+        }
+
+        modal.style.display = 'block';
+    }
+
+    closeButton.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    // Attach click event to every UCI points link
+    document.querySelectorAll('.uci-points-link').forEach(link => {
+        link.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            openModal(userId);
+        });
+    });
+});
+</script>
 
 {% endblock %}
