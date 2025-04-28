@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="how-to-play-container">
+
+  <h1>📜 How to Play Leader's Jersey</h1>
+
+  <section class="instructions-section">
+    <h2>Step 1: Join a Race</h2>
+    <p>Go to 'Available races', pick an available Grand Tour or stage race and join before the first stage starts.</p>
+  </section>
+
+  <section class="instructions-section">
+    <h2>Step 2: Select Your Riders</h2>
+    <p>For each stage, choose one rider you think will perform best.</p>
+    <p>Before stage 1, also select a <strong>backup rider</strong> — just in case your stage rider doesn't finish.</p>
+    <p>Be careful: the startlist might not be complete until one day before the start of the race, so check your selection on the morning of the start!</p>
+  </section>
+
+  <section class="instructions-section">
+    <h2>Step 3: Lock Your Selections</h2>
+    <p>Selections close at the stage start time. After that, your choice is locked for that stage.</p>
+  </section>
+
+  <section class="instructions-section">
+    <h2>Step 4: Earn GC Time</h2>
+    <ul>
+      <li>🎯 If your rider finishes the stage ➔ you get their time (minus bonus seconds if applicable).</li>
+      <li>🚑 If your rider DNF's ➔ backup rider time is used.</li>
+      <li>🐢 If both fail ➔ you get the time of the last finisher.</li>
+    </ul>
+  </section>
+
+  <section class="instructions-section">
+    <h2>Step 5: Win!</h2>
+    <p>The player with the lowest total GC time wins the race!</p>
+  </section>
+
+  <div class="how-to-play-cta">
+    <a href="/races/" class="button">See Available Races</a>
+  </div>
+
+</div>
+
+{% endblock %}

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CustomLoginView, custom_logout_view, home, register, profile, rider_selection, save_selection, leaderboard, save_backup_selection, race_list, join_race, total_uci_points
+from .views import CustomLoginView, custom_logout_view, home, register, profile, rider_selection, save_selection, leaderboard, save_backup_selection, race_list, join_race, total_uci_points, how_to_play
 
 urlpatterns = [
     path('register/', register, name='register'),
@@ -14,4 +14,5 @@ urlpatterns = [
     path('races/', race_list, name='race_list'),
     path('join/<slug:race_slug>/<int:year>/', join_race, name='join_race'),
     path('overall_leaderboard/', total_uci_points, name='overall_leaderboard'),
+    path('how-to-play/', how_to_play, name='how_to_play'),
 ]

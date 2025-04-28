@@ -1,20 +1,52 @@
 {% extends "base.html" %}
 
 {% block content %}
+<h2>Welcome to Leader's Jersey</h2>
+
+<section class="welcome-section">
     <h1>Leader's Jersey</h1>
-    {% if user.is_authenticated %}
-        <h2>Welcome back, {{user.username}}!</h2>
-        <p>Are you ready to beat Pogacar and Vingegaard in the Tour de France? Ready to win the pink jersey from the Giro d'Italia or the red one from the Vuelta? Then join the Leader's Jersey and become the new champion from behind your desk! Simply select one rider per stage and he'll do all the work for you!</p>
-        <a href="/profile/">Click here to go to your profile page</a><br>
-        <a href="/rider_selection/">Click here to select riders</a><br>
-        <a href="/leaderboard">Click here to go to the leaderboard</a><br>
-        <a href="{% url 'race_list' %}">Available Races</a><br>
-        <a href="{% url 'overall_leaderboard' %}">🌍 UCI Overall Leaderboard</a>
-    {% else %}
-        <h2>Welcome to Leader's Jersey</h2>
-        <p>Are you ready to beat Pogacar and Vingegaard in the Tour de France? Ready to win the pink jersey from the Giro d'Italia or the red one from the Vuelta? Then join the Leader's Jersey and become the new champion from behind your desk! Simply select one rider per stage and he'll do all the work for you!</p>
-        <a href="/register/">Click here to register</a><br>
-        <a href="/login/">Click here to login</a><br>
-        <a href="{% url 'race_list' %}">Available Races</a>
-    {% endif %}
+    <h4>Predict the champions. Outsmart the peloton. Win the Leader's Jersey</h4>
+</section>
+
+<div class="home-grid">
+
+    <!-- General Explanation Block -->
+    <div class="home-block">
+        <h3>🎯 How to Play</h3>
+        <p>Pick a rider each stage, beat the GC, and win!</p>
+        <a href="{% url 'how_to_play' %}" class="home-button">Learn How to Play</a>
+    </div>
+
+    <!-- Upcoming Races Block -->
+    <div class="home-block">
+        <h3>🚴 Upcoming Races</h3>
+        {% for race in upcoming_races %}
+            <div class="race-card">
+                <h4>{{ race.race_name }}</h4>
+                <p>{{ race.start_date|date:"j M Y" }}</p>
+            </div>
+        {% empty %}
+            <p>No upcoming races.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Profile Block -->
+    <div class="home-block">
+        <h3>👤 Your Profile</h3>
+        {% if user.is_authenticated %}
+            <p>Manage your selections and see your stats.</p>
+            <a href="{% url 'profile' %}" class="home-button">Go to Profile</a>
+        {% else %}
+            <p>Please login or register to start playing.</p>
+            <a href="{% url 'login' %}" class="home-button">Login</a>
+        {% endif %}
+    </div>
+
+    <!-- Other Suggestions Block -->
+    <div class="home-block">
+        <h3>💡 What's Next?</h3>
+        <p>More features coming soon, like race history and awards!</p>
+    </div>
+
+</div>
 {% endblock %}

@@ -577,3 +577,23 @@ def total_uci_points(request):
         'player_details': player_details,
     })
 
+
+def home(request):
+    today = timezone.now().date()
+    upcoming_races = Race.objects.filter(start_date__gte=today).order_by('start_date')[:3]
+    
+    top_players = (
+        PlayerUciPoints.objects
+        .values('race_participant__user__username')
+        .annotate(total_points=Sum('uci_points'))
+        .order_by('-total_points')[:5]
+    )
+    
+    return render(request, 'home.html', {
+        'upcoming_races': upcoming_races,
+        'top_players': top_players,
+    })
+
+
+def how_to_play(request):
+    return render(request, 'how_to_play.html')

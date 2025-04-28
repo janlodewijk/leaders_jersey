@@ -501,4 +501,106 @@ select,
   .nav-link:hover {
     text-decoration: underline;
   }
-  
+
+
+  .home-container {
+    text-align: center;
+    padding: 2em;
+}
+
+.welcome-section {
+    margin-bottom: 3em;
+    text-align: center;
+}
+
+.home-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.home-block {
+    background: #f7f7f7;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.home-card {
+    padding: 1.5em;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    background-color: #fffafc;
+}
+
+.race-card {
+    margin-top: 10px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.home-card h3 {
+    margin-top: 0;
+    color: #d6336c;
+}
+
+.home-button {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 8px 15px;
+    background-color: #ff69b4; /* Giro pink! */
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.home-button:hover {
+    background-color: #ff85c1;
+}
+
+.button {
+    background-color: #d6336c;
+    color: white;
+    padding: 0.7em 1.2em;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+}
+
+.button:hover {
+    background-color: #c1235b;
+}
+
+.how-to-play-container {
+    max-width: 800px;
+    margin: 2em auto;
+    padding: 1.5em;
+    text-align: center;
+}
+
+.instructions-section {
+    margin-bottom: 2em;
+}
+
+.instructions-section h2 {
+    color: #d6336c;
+    margin-bottom: 0.5em;
+}
+
+.instructions-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.instructions-section ul li::before {
+    content: "🚴 ";
+    margin-right: 0.5em;
+}
+
+.how-to-play-cta {
+    margin-top: 2em;
+}
