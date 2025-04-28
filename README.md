@@ -14,8 +14,10 @@ Each player:
 - If their rider DNF'd, the **backup rider’s time** is used.
 - If both the stage selected rider and backup DNF’d, the **last finisher’s time** is used as a fallback.
 - Selections are **locked at the stage deadline** and results appear once the stage finishes.
+- After the race, UCI points are awarded based on final GC position among players.
 
 The player with the lowest total GC time at the end of the race wins! 🏆
+Over the year, players can compete for the Overall UCI Points Leaderboard! 🌍✨
 
 ---
 
@@ -27,8 +29,11 @@ The player with the lowest total GC time at the end of the race wins! 🏆
 - ✅ Dynamic countdown timer for each stage
 - ✅ Auto-freezing selections after the deadline
 - ✅ Total GC time calculation per user
-- ✅ Leaderboard view
+- ✅ Stage-by-stage and final Leaderboard views
 - ✅ DNF fallback logic with backup rider
+- ✅ UCI Points system for completed races
+- ✅ Overall yearly UCI Points Leaderboard
+- ✅ Interactive modal pop-ups showing race-by-race UCI points breakdown
 - ✅ Clean and customizable UI (Giro pink theme ready!)
 
 ---
@@ -104,17 +109,17 @@ You can trigger the ETL pipelines from the Django Admin panel:
 - Click "Run ETL" to fetch and load the data automatically.
 
 
-🗺️ **Roadmap**
-
-    🟢 Add form validation & improved UX
-
-    🟢 Add real GC comparison + highlight if user beats it
-
-    🔜 Deploy to the web (Render or Railway)
-
-    🔜 Mobile layout improvements
-
-    🔜 Email notifications (optional)
+🗺️ Roadmap
+🟢 Add form validation & improved UX
+🟢 Add real GC comparison + highlight if user beats it
+🟢 Add UCI points assignment and yearly leaderboard
+🟢 Add race-by-race UCI points modal pop-up
+🔜 Deploy to the web (Render, Railway, or similar)
+🔜 Improve mobile layout and responsiveness
+🔜 Add home page with upcoming races, game rules, and user profile links
+🔜 Add player profile page with race history and UCI points overview
+🔜 Add optional email notifications (e.g., stage reminder, results update)
+🔜 Dark mode / theme switcher for better user experience
 
 **Credits**
 
