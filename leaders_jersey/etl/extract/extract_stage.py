@@ -8,6 +8,22 @@ def extract_stage_info(race, year):
     max_stages = 30
 
     logger.info(f"Starting stage info extraction for {race} ({year})")
+    prologue_url = f"https://www.procyclingstats.com/race/{race}/{year}/prologue"
+    try:
+        prologue = Stage(prologue_url)
+
+        stages_info.append({
+            'race': race,
+            'year': year,
+            'stage_number': 0,
+            'stage_date': prologue.date(),
+            'departure': prologue.departure(),
+            'arrival': prologue.arrival(),
+            'distance': round(prologue.distance())
+        })
+        logger.info(f"Extracted prologue: {prologue.departure()} → {prologue.arrival()}, {prologue.distance()} km")
+    except Exception as e:
+        logger.info(f"No prologue found for {race} ({year})")
 
     while stage_number <= max_stages:
         
@@ -42,18 +58,20 @@ def extract_stage_info(race, year):
     logger.info(f"Finished extraction: {len(stages_info)} stages found for {race} ({year})")
     return stages_info
             
-    
-
 
 def extract_stage_results(race, year, stage_number):
     try:
-        url = f"https://www.procyclingstats.com/race/{race}/{year}/stage-{stage_number}"
-        stage_results_raw = Stage(url)
+        if stage_number == 0:
+            url = f"https://www.procyclingstats.com/race/{race}/{year}/prologue"
+        else:
+            url = f"https://www.procyclingstats.com/race/{race}/{year}/stage-{stage_number}"
 
+        stage_results_raw = Stage(url)
         parsed_results = stage_results_raw.parse()
-        logger.info(f"Sucessfully extracted results for {race} ({year}) - stage {stage_number}")
+        
+        logger.info(f"Successfully extracted results for {race} ({year}) - stage {stage_number if stage_number > 0 else 'prologue'}")
         return parsed_results
-    
+
     except Exception as e:
-        logger.error(f"Stage {stage_number} not finished / no results yet. Error: {e}")
+        logger.error(f"Stage {stage_number if stage_number > 0 else 'prologue'} not finished / no results yet. Error: {e}")
         return None

@@ -55,7 +55,7 @@
     <tbody>
         {% for item in stage_data %}
         <tr>
-            <td>Stage {{ item.stage.stage_number }}</td>
+            <td>{{ item.stage.stage_number|stage_label }}</td>
             <td>{{ item.stage.departure }} - {{ item.stage.arrival }}</td>
             <td>{{ item.stage.distance }} km</td>
             <td>{{ item.stage.stage_type }}</td>
