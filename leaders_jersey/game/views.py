@@ -141,10 +141,19 @@ def rider_selection(request, race_slug, year):
         used_fallback = False
 
         if selected_rider:
-            result = StageResult.objects.filter(stage=stage, rider=selected_rider.rider).first()
+            result = StageResult.objects.filter(
+                stage=stage,
+                rider=selected_rider.rider,
+                ranking__isnull=False,
+                finishing_time__isnull=False
+            ).first()
 
         if not result and backup_selection and backup_selection.rider:
-            result = StageResult.objects.filter(stage=stage, rider=backup_selection.rider.rider).first()
+            result = StageResult.objects.filter(stage=stage,
+                                                    rider=backup_selection.rider.rider,
+                                                    ranking__isnull=False,
+                                                    finishing_time__isnull=False
+                                                ).first()
             used_backup = result is not None
 
         if not result:
@@ -295,7 +304,6 @@ def leaderboard(request, race_slug, year):
             'gc_rank': result.gc_rank,
         })
 
-    # Determine latest stage with passed deadline
     now = timezone.now()
     latest_locked_stage = None
     for stage in reversed(stages):
@@ -305,18 +313,15 @@ def leaderboard(request, race_slug, year):
                 latest_locked_stage = stage
                 break
 
-    # Check if race is finished and uci points assigned
     final_stage = stages.last()
     race_finished = StageResult.objects.filter(stage=final_stage).exists()
-
     uci_points_assigned = PlayerUciPoints.objects.filter(race_participant__race=race).exists()
-    uci_points_dict = {}  # <-- always define empty dict first
+    uci_points_dict = {}
 
     if race_finished and uci_points_assigned:
         uci_points_entries = PlayerUciPoints.objects.filter(race_participant__race=race).values_list('race_participant__user_id', 'uci_points')
         uci_points_dict = dict(uci_points_entries)
 
-    # Build leaderboard
     participants = RaceParticipant.objects.filter(race=race).select_related('user')
     leaderboard_data = []
 
@@ -334,38 +339,119 @@ def leaderboard(request, race_slug, year):
         backup_rider = backup_selection.rider.rider if backup_selection and backup_selection.rider else None
         total_time = timedelta(0)
         latest_rider_display = "-"
+        used_backup_display = False
 
         for stage in stages:
             result = None
             selection = next((s for s in selections if s.stage_id == stage.id), None)
-
             used_backup = False
             used_fallback = False
 
             if selection and selection.rider:
-                result = StageResult.objects.filter(stage=stage, rider=selection.rider.rider).first()
-            elif backup_rider:
-                result = StageResult.objects.filter(stage=stage, rider=backup_rider).first()
-                if result:
-                    used_backup = True
-            else:
-                result = StageResult.objects.filter(stage=stage).order_by('-ranking').first()
-                if result:
-                    used_fallback = True
+                result = StageResult.objects.filter(
+                    stage=stage,
+                    rider=selection.rider.rider,
+                    ranking__isnull=False,
+                    finishing_time__isnull=False
+                ).first()
 
-            # Save latest rider display if this is the latest locked stage
+            if not result and backup_rider:
+                result = StageResult.objects.filter(
+                    stage=stage,
+                    rider=backup_rider,
+                    ranking__isnull=False,
+                    finishing_time__isnull=False
+                ).first()
+                used_backup = result is not None
+
+            if not result:
+                result = StageResult.objects.filter(
+                    stage=stage,
+                    ranking__isnull=False,
+                    finishing_time__isnull=False
+                ).order_by('-ranking').first()
+                used_fallback = result is not None
+            
             if latest_locked_stage and stage.id == latest_locked_stage.id:
-                if selection and selection.rider:
-                    latest_rider_display = selection.rider.rider.rider_name
-                elif used_backup and backup_selection:
-                    latest_rider_display = f"{backup_selection.rider.rider.rider_name} (Backup)"
-                elif used_fallback and result:
-                    latest_rider_display = f"{result.rider.rider.rider_name} (Last finisher)"
-                else:
-                    latest_rider_display = "-"
+                rider_to_use = None
 
-            if result:
-                total_time += result.finishing_time - result.bonus
+                if selection and selection.rider:
+                    result = StageResult.objects.filter(
+                        stage=stage,
+                        rider=selection.rider.rider,
+                        ranking__isnull=False,
+                        finishing_time__isnull=False
+                    ).first()
+                    if result:
+                        rider_to_use = selection.rider.rider
+                        used_backup_display = False
+
+                if not rider_to_use and backup_rider:
+                    result = StageResult.objects.filter(
+                        stage=stage,
+                        rider=backup_rider,
+                        ranking__isnull=False,
+                        finishing_time__isnull=False
+                    ).first()
+                    if result:
+                        rider_to_use = backup_rider
+                        used_backup_display = True
+
+                if not rider_to_use:
+                    result = StageResult.objects.filter(
+                        stage=stage,
+                        ranking__isnull=False,
+                        finishing_time__isnull=False
+                    ).order_by('-ranking').first()
+                    if result:
+                        rider_to_use = result.rider
+                        used_backup_display = False
+
+                if rider_to_use:
+                    latest_rider_display = rider_to_use.rider_name
+
+
+            if result and result.finishing_time:
+                total_time += result.finishing_time - (result.bonus or timedelta(0))
+
+        # Compute time for latest past stage
+        latest_stage_time = "-"
+        if latest_locked_stage:
+            selection = next((s for s in selections if s.stage_id == latest_locked_stage.id), None)
+            result = None
+            used_backup_time = False
+            used_fallback_time = False
+
+            if selection and selection.rider:
+                result = StageResult.objects.filter(
+                    stage=latest_locked_stage,
+                    rider=selection.rider.rider,
+                    ranking__isnull=False,
+                    finishing_time__isnull=False
+                ).first()
+
+            if not result and backup_rider:
+                result = StageResult.objects.filter(
+                    stage=latest_locked_stage,
+                    rider=backup_rider,
+                    ranking__isnull=False,
+                    finishing_time__isnull=False
+                ).first()
+                used_backup_time = result is not None
+
+            if not result:
+                result = StageResult.objects.filter(
+                    stage=latest_locked_stage,
+                    ranking__isnull=False,
+                    finishing_time__isnull=False
+                ).order_by('-ranking').first()
+                used_fallback_time = result is not None
+
+            if result and result.finishing_time:
+                time = result.finishing_time - (result.bonus or timedelta(0)) if not used_fallback_time else result.finishing_time
+                seconds = time.total_seconds()
+                latest_stage_time = f"{int(seconds // 3600)}:{int((seconds % 3600) // 60):02}:{int(seconds % 60):02}"
+
 
         total_seconds = total_time.total_seconds()
         formatted_total_time = (
@@ -373,47 +459,12 @@ def leaderboard(request, race_slug, year):
             if total_seconds else "0:00:00"
         )
 
-        # Identify latest past stage
-        past_stages = stages.filter(stage_date__lt=timezone.localdate()) | stages.filter(
-            stage_date=timezone.localdate(), start_time__lt=timezone.localtime().time()
-        )
-        latest_past_stage = past_stages.order_by('-stage_date', '-start_time').first()
-
-        latest_stage_time = "-"
-        if latest_past_stage:
-            deadline = make_aware(datetime.combine(latest_past_stage.stage_date, latest_past_stage.start_time))
-
-            if timezone.now() < deadline:
-                latest_stage_time = "-"
-            else:
-                selection = next((s for s in selections if s.stage_id == latest_past_stage.id), None)
-                result = None
-                used_backup = False
-                used_fallback = False
-
-                if selection and selection.rider:
-                    result = StageResult.objects.filter(stage=latest_past_stage, rider=selection.rider.rider).first()
-
-                if not result and backup_rider:
-                    result = StageResult.objects.filter(stage=latest_past_stage, rider=backup_rider).first()
-                    used_backup = result is not None
-
-                if not result:
-                    result = StageResult.objects.filter(stage=stage).order_by('ranking').last()
-                    used_fallback = result is not None
-
-                if result and result.finishing_time:
-                    time = result.finishing_time if used_fallback else result.finishing_time - result.bonus
-                    total_seconds = time.total_seconds()
-                    latest_stage_time = f"{int(total_seconds // 3600)}:{int((total_seconds % 3600) // 60):02}:{int(total_seconds % 60):02}"
-                else:
-                    latest_stage_time = "Stage in progress"
-
         entry = {
             'player': participant.user,
             'team_name': participant.user.profile.team_name,
             'total_time': formatted_total_time,
             'selected_rider': latest_rider_display,
+            'used_backup': used_backup_display,
             'num_selections': selections.count(),
             'latest_stage_time': latest_stage_time,
         }

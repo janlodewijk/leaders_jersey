@@ -8,6 +8,7 @@
   <!-- 🎮 Fantasy Leaderboard -->
   <div>
     <h2>🏆 Game Leaderboard 🏆</h2>
+    <h3>Riders in red are backup riders</h3>
     <table class="leaderboard-table">
       <thead>
         <tr>
@@ -30,7 +31,9 @@
             </td>
             <td>{{ entry.player.username }}</td>
             <td>{{ entry.team_name }}</td>
-            <td>{{ entry.selected_rider }}</td>
+            <td class="{% if entry.used_backup %}backup-cell{% endif %}">
+              {{ entry.selected_rider }}
+            </td>          
             <td>{{ entry.latest_stage_time }}</td>            
             <td>{{ entry.total_time }}</td>
             {% if leaderboard_data.0.uci_points is not None %}

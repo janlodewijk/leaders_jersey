@@ -604,3 +604,9 @@ select,
 .how-to-play-cta {
     margin-top: 2em;
 }
+
+.backup-cell {
+    background-color: rgba(255, 0, 0, 0.15);
+    font-weight: bold;
+  }
+  

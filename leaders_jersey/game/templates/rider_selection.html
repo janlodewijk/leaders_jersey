@@ -100,7 +100,7 @@
                     -
                 {% endif %}
             </td>
-            <td>
+            <td class="{% if item.used_backup %}backup-cell{% endif %}">
                 {% if item.used_fallback %}
                     Last finisher
                 {% elif item.used_backup %}
