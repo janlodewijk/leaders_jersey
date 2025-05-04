@@ -562,7 +562,7 @@ def join_race(request, race_slug, year):
     else:
         print(f"{request.user.username} is already a participant in {race}")
     
-    return redirect('race_list')
+    return redirect('rider_selection', race_slug=race.url_reference, year=race.year)
 
 
 @login_required

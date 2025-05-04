@@ -19,18 +19,33 @@
                 {% if user.is_authenticated %}
                     <a href="/profile/">Profile</a>
                     <a href="/races/">Available races</a>
-
-                    {% if current_races %}
+                    {% if current_races or available_races %}
                     <div class="dropdown">
                         <button class="dropbtn">My Races ⏷</button>
                         <div class="dropdown-content">
-                            {% for entry in current_races %}
-                                <div class="race-group">
-                                    <span class="race-name">{{ entry.race.race_name }}</span>
-                                    <a href="{% url 'rider_selection' entry.race.url_reference entry.race.year %}">➤ Rider Selection</a>
-                                    <a href="{% url 'leaderboard' entry.race.url_reference entry.race.year %}">🏆 Leaderboard</a>
-                                </div>
-                            {% endfor %}
+
+                            {% if current_races %}
+                                <strong class="race-section">Current Races</strong>
+                                {% for entry in current_races %}
+                                    <div class="race-group">
+                                        <span class="race-name">{{ entry.race.race_name }}</span>
+                                        <a href="{% url 'rider_selection' entry.race.url_reference entry.race.year %}">➤ Rider Selection</a>
+                                        <a href="{% url 'leaderboard' entry.race.url_reference entry.race.year %}">🏆 Leaderboard</a>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+
+                            {% if available_races %}
+                                <hr>
+                                <strong class="race-section">Available to Join</strong>
+                                {% for race in available_races %}
+                                    <div class="race-group">
+                                        <span class="race-name">{{ race.race_name }}</span>
+                                        <a href="{% url 'join_race' race.url_reference race.year %}">➕ Join</a>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+
                         </div>
                     </div>
                     {% endif %}

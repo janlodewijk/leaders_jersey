@@ -610,3 +610,30 @@ select,
     font-weight: bold;
   }
   
+  .race-group a[href*='join'] {
+    color: green;
+    font-weight: bold;
+  }
+  
+  .race-group {
+    padding-left: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .race-group .race-name {
+    display: inline-block;
+    max-width: 180px; /* adjust as needed */
+    vertical-align: middle;
+  }
+
+  .race-section {
+    color: #e91e63; /* pink */
+    font-weight: bold;
+    display: block;
+    margin: 12px 0 6px; /* top margin added */
+    padding-left: 20px;
+  }
+  
+  
