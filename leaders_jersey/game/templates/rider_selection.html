@@ -186,14 +186,14 @@ document.addEventListener('DOMContentLoaded', function () {
         riderList.innerHTML = '';
         riderList.appendChild(searchInput);
 
-        const team = teams[teamIndex];
-        const teamDiv = document.createElement('div');
-        teamDiv.classList.add('team-box');
-
         const scrollHint = document.createElement('p');
         scrollHint.innerText = '...or scroll through the teams:';
         scrollHint.style = 'text-align: center; font-style: italic; margin: 0 0 10px 0;';
         riderList.appendChild(scrollHint);
+
+        const team = teams[teamIndex];
+        const teamDiv = document.createElement('div');
+        teamDiv.classList.add('team-box');
 
         const teamHeader = document.createElement('div');
         teamHeader.classList.add('team-header');
