@@ -222,7 +222,7 @@ select,
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 5px;
 }
 
 .rider-button {
@@ -234,9 +234,12 @@ select,
     border-radius: 5px;
     cursor: pointer;
     font-size: 14px;
-    min-width: 250px;
-    max-width: 300px;
+    width: 100%;
+    max-width: 280px;
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: background-color 0.3s;
 }
 

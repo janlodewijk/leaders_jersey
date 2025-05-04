@@ -121,136 +121,209 @@
 {{ backup_riders|json_script:"riders-data" }}
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const modal = document.getElementById('riderModal');
-        const riderList = document.getElementById('rider-list');
-        const closeButton = document.querySelector('.close-button');
-        const openButtons = document.querySelectorAll('.open-modal-button');
-        let currentStageId = null;
-    
-        openButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                currentStageId = this.getAttribute('data-stage-id');
-                modal.style.display = 'block';
-                loadRiders();
-            });
-        });
-    
-        closeButton.addEventListener('click', function () {
-            modal.style.display = 'none';
-        });
-    
-        window.onclick = function (event) {
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
-        };
-    
-        function loadRiders() {
-            riderList.innerHTML = '';
-    
-            const teams = JSON.parse(document.getElementById('riders-data').textContent);
-            const riderLimit = JSON.parse('{{ rider_limit|escapejs }}');   // ← Inserted safely outside string!
-    
-            let teamIndex = 0;
-    
-        function renderTeam() {
-            riderList.innerHTML = '';
-    
-            const team = teams[teamIndex];
-    
-            const teamDiv = document.createElement('div');
-            teamDiv.classList.add('team-box');
-    
-            // 🛠 Create header with arrows and title
-            const teamHeader = document.createElement('div');
-            teamHeader.classList.add('team-header');
-    
-            const leftArrow = document.createElement('button');
-            leftArrow.textContent = '←';
-            leftArrow.classList.add('arrow-button');
-            leftArrow.addEventListener('click', function () {
-                teamIndex = (teamIndex - 1 + teams.length) % teams.length;
-                renderTeam();
-            });
-    
-            const teamTitle = document.createElement('h4');
-            teamTitle.innerText = team.team;
-            teamTitle.classList.add('team-title');
-    
-            const rightArrow = document.createElement('button');
-            rightArrow.textContent = '→';
-            rightArrow.classList.add('arrow-button');
-            rightArrow.addEventListener('click', function () {
-                teamIndex = (teamIndex + 1) % teams.length;
-                renderTeam();
-            });
-    
-            teamHeader.appendChild(leftArrow);
-            teamHeader.appendChild(teamTitle);
-            teamHeader.appendChild(rightArrow);
-    
-            teamDiv.appendChild(teamHeader); // add header to the team box
-    
-            // 🛠 Rider buttons container
-            const ridersContainer = document.createElement('div');
-            ridersContainer.classList.add('riders-container');
-    
-            team.riders.forEach(rider => {
-                const riderButton = document.createElement('button');
-                riderButton.classList.add('rider-button');
-                riderButton.innerText = `${rider.start_number ?? "TBD"} - ${rider.rider_name}`;
-    
-                if (rider.is_dnf || rider.is_unavailable) {
-                    riderButton.disabled = true;
-                    riderButton.classList.add('disabled');
-                } else {
-                    riderButton.addEventListener('click', function () {
-                        selectRider(rider.id);
-                    });
-                }
-    
-                ridersContainer.appendChild(riderButton);
-            });
-    
-            teamDiv.appendChild(ridersContainer);
-    
-            riderList.appendChild(teamDiv);
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('riderModal');
+    const riderList = document.getElementById('rider-list');
+    const closeButton = document.querySelector('.close-button');
+    const openButtons = document.querySelectorAll('.open-modal-button');
+    let currentStageId = null;
+    let teams = [];
+    let teamIndex = 0;
+    let searchInput;
+
+    // 🔤 Normalize for fuzzy matching (e.g. Kämna → kamna)
+    function normalize(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     }
-    
-    renderTeam(); // call it immediately
-    
-    
-        }
-    
-        function selectRider(riderId) {
-            const form = document.createElement('form');
-            form.method = 'post';
-            form.action = window.location.href;
-    
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = '{{ csrf_token }}';  // Safe Django insert
-    
-            const riderInput = document.createElement('input');
-            riderInput.type = 'hidden';
-            riderInput.name = 'rider_id';
-            riderInput.value = riderId;
-    
-            const stageInput = document.createElement('input');
-            stageInput.type = 'hidden';
-            stageInput.name = 'stage_id';
-            stageInput.value = currentStageId || '';
-    
-            form.appendChild(csrfInput);
-            form.appendChild(riderInput);
-            form.appendChild(stageInput);
-    
-            document.body.appendChild(form);
-            form.submit();
-        }
+
+    openButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            currentStageId = this.getAttribute('data-stage-id');
+            modal.style.display = 'block';
+            loadRiders();
+        });
     });
-    </script>
+
+    closeButton.addEventListener('click', function () {
+        modal.style.display = 'none';
+    });
+
+    window.onclick = function (event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    function loadRiders() {
+        riderList.innerHTML = '';
+        teams = JSON.parse(document.getElementById('riders-data').textContent);
+        const riderLimit = JSON.parse('{{ rider_limit|escapejs }}');
+
+        // 🔍 Create search bar
+        searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.id = 'rider-search';
+        searchInput.placeholder = 'Search rider by name and press enter...';
+        searchInput.style = 'width: 100%; max-width: 550px; padding: 8px; margin: 0 auto 10px auto; display: block;';
+        riderList.appendChild(searchInput);
+
+        renderTeam();
+
+        searchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const query = this.value.toLowerCase().trim();
+                if (query === "") {
+                    renderTeam();
+                } else {
+                    renderSearchResults(query);
+                }
+            }
+        });
+    }
+
+    function renderTeam() {
+        riderList.innerHTML = '';
+        riderList.appendChild(searchInput);
+
+        const team = teams[teamIndex];
+        const teamDiv = document.createElement('div');
+        teamDiv.classList.add('team-box');
+
+        const scrollHint = document.createElement('p');
+        scrollHint.innerText = '...or scroll through the teams:';
+        scrollHint.style = 'text-align: center; font-style: italic; margin: 0 0 10px 0;';
+        riderList.appendChild(scrollHint);
+
+        const teamHeader = document.createElement('div');
+        teamHeader.classList.add('team-header');
+
+        const leftArrow = document.createElement('button');
+        leftArrow.textContent = '←';
+        leftArrow.classList.add('arrow-button');
+        leftArrow.addEventListener('click', function () {
+            teamIndex = (teamIndex - 1 + teams.length) % teams.length;
+            renderTeam();
+        });
+
+        const teamTitle = document.createElement('h4');
+        teamTitle.innerText = team.team;
+        teamTitle.classList.add('team-title');
+
+        const rightArrow = document.createElement('button');
+        rightArrow.textContent = '→';
+        rightArrow.classList.add('arrow-button');
+        rightArrow.addEventListener('click', function () {
+            teamIndex = (teamIndex + 1) % teams.length;
+            renderTeam();
+        });
+
+        teamHeader.appendChild(leftArrow);
+        teamHeader.appendChild(teamTitle);
+        teamHeader.appendChild(rightArrow);
+
+        teamDiv.appendChild(teamHeader);
+
+        const ridersContainer = document.createElement('div');
+        ridersContainer.classList.add('riders-container');
+
+        team.riders.forEach(rider => {
+            const riderButton = document.createElement('button');
+            riderButton.classList.add('rider-button');
+            riderButton.setAttribute('data-name', normalize(rider.rider_name));
+            riderButton.innerText = `${rider.start_number ?? "TBD"} - ${rider.rider_name}`;
+
+            if (rider.is_dnf || rider.is_unavailable) {
+                riderButton.disabled = true;
+                riderButton.classList.add('disabled');
+            } else {
+                riderButton.addEventListener('click', function () {
+                    selectRider(rider.id);
+                });
+            }
+
+            ridersContainer.appendChild(riderButton);
+        });
+
+        teamDiv.appendChild(ridersContainer);
+        riderList.appendChild(teamDiv);
+    }
+
+    function renderSearchResults(query) {
+        riderList.innerHTML = '';
+        riderList.appendChild(searchInput);
+
+        const resultsContainer = document.createElement('div');
+        resultsContainer.classList.add('riders-container'); // use same layout as team view
+        resultsContainer.style.flexDirection = 'column'; // ✅ vertical layout
+
+        let found = false;
+
+        teams.forEach(team => {
+            team.riders.forEach(rider => {
+                const name = normalize(rider.rider_name);
+                if (name.includes(normalize(query))) {
+                    const riderButton = document.createElement('button');
+                    riderButton.classList.add('rider-button');
+                    const teamCode = rider.team_code || "UNK";
+                    riderButton.innerText = `${rider.start_number ?? "TBD"} - ${rider.rider_name} (${teamCode})`;
+
+                    if (rider.is_dnf || rider.is_unavailable) {
+                        riderButton.disabled = true;
+                        riderButton.classList.add('disabled');
+                    } else {
+                        riderButton.addEventListener('click', function () {
+                            selectRider(rider.id);
+                        });
+                    }
+
+                    resultsContainer.appendChild(riderButton);
+                    found = true;
+                }
+            });
+        });
+
+        if (!found) {
+            const emptyMsg = document.createElement('p');
+            emptyMsg.innerText = 'No matching riders found.';
+            resultsContainer.appendChild(emptyMsg);
+        }
+
+        riderList.appendChild(resultsContainer);
+    }
+
+    function selectRider(riderId) {
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = window.location.href;
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+
+        const riderInput = document.createElement('input');
+        riderInput.type = 'hidden';
+        riderInput.name = 'rider_id';
+        riderInput.value = riderId;
+
+        const stageInput = document.createElement('input');
+        stageInput.type = 'hidden';
+        stageInput.name = 'stage_id';
+        stageInput.value = currentStageId || '';
+
+        form.appendChild(csrfInput);
+        form.appendChild(riderInput);
+        form.appendChild(stageInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+});
+</script>
+    
+    
+    
+    
 
 {% endblock %}
