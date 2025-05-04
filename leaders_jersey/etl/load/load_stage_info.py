@@ -64,6 +64,8 @@ def clean_time(value):
 
 def load_stage_results(transformed_stage_results):
     try:
+        finished_stages = set()
+
         for index, row in transformed_stage_results.iterrows():
             race = row['race']
             year = row['year']
@@ -93,14 +95,11 @@ def load_stage_results(transformed_stage_results):
                 logger.warning(f"Rider {external_id} not found. Skipping.")
                 continue
 
-
-            # ✅ CONVERT EVERYTHING PROPERLY
             bonus = None if pd.isna(bonus) else timedelta(seconds=bonus.total_seconds())
             ranking = None if pd.isna(ranking) else ranking
             gc_rank = None if pd.isna(gc_rank) else gc_rank
             gc_time = None if pd.isna(gc_time) else timedelta(seconds=gc_time.total_seconds())
 
-            # Save
             StageResult.objects.update_or_create(
                 stage=stage_obj,
                 rider=rider_obj,
@@ -113,8 +112,16 @@ def load_stage_results(transformed_stage_results):
                 }
             )
 
-        
+            finished_stages.add(stage_obj)
+
+        # ✅ Mark stages as finished
+        for stage in finished_stages:
+            stage.has_finished = True
+            stage.save()
+            logger.info(f"Marked stage {stage.stage_number} of {stage.race} as finished.")
+
         logger.info(f"Successfully loaded stage results to database")
-    
+
     except Exception as e:
         logger.error(f"Failed to load stage results to database: {e}")
+
