@@ -288,6 +288,10 @@ def leaderboard(request, race_slug, year):
             stage=most_recent_stage,
             gc_rank__isnull=False
         ).order_by('gc_rank')[:10]
+    
+    gc_leader_time = None
+    if top_10_riders:
+        gc_leader_time = top_10_riders[0].gc_time
 
     gc_data = []
     for result in top_10_riders:
@@ -463,6 +467,7 @@ def leaderboard(request, race_slug, year):
             'player': participant.user,
             'team_name': participant.user.profile.team_name,
             'total_time': formatted_total_time,
+            'total_time_obj': total_time,
             'selected_rider': latest_rider_display,
             'used_backup': used_backup_display,
             'num_selections': selections.count(),
@@ -480,6 +485,7 @@ def leaderboard(request, race_slug, year):
         'leaderboard_data': leaderboard_data,
         'gc_data': gc_data,
         'race': race,
+        'gc_leader_time': gc_leader_time,
     })
 
 
@@ -648,3 +654,12 @@ def home(request):
 
 def how_to_play(request):
     return render(request, 'how_to_play.html')
+
+
+@require_POST
+@login_required
+def delete_account(request):
+    user = request.user
+    user.delete()
+    messages.success(request, "Your account has been deleted.")
+    return redirect('home')

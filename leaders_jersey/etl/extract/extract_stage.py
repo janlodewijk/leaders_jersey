@@ -8,6 +8,8 @@ def extract_stage_info(race, year):
     max_stages = 30
 
     logger.info(f"Starting stage info extraction for {race} ({year})")
+
+    # Check if there is a prologue (procyclingstats usually considers the stage after the prologue as stage 1)
     prologue_url = f"https://www.procyclingstats.com/race/{race}/{year}/prologue"
     try:
         prologue = Stage(prologue_url)

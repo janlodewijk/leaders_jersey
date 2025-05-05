@@ -19,7 +19,7 @@ def transform_stage_results(raw_stage_info, race, year, stage_number):
 
         logger.info(f"Started stage results transformation")
 
-        # Process stage results
+        # Process stage results for each rider
         for rider in raw_stage_info.get('results', []):
             external_id = rider.get('rider_url', 'Unknown')
             if not external_id:

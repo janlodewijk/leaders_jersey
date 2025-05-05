@@ -50,6 +50,12 @@
             <p>You haven’t joined any races yet.</p>
         {% endif %}
     </div>
+    <div>
+        <form method="POST" action="{% url 'delete_account' %}" onsubmit="return confirm('Are you sure you want to delete your account? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="danger-button">Delete My Account</button>
+        </form>
+    </div>
 </div>
 {% endblock %}
 

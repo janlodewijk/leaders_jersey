@@ -135,3 +135,6 @@ SESSION_COOKIE_AGE = 7200   # = 2 hours
 
 LOGIN_URL = '/login/'
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+

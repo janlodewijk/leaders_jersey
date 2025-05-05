@@ -8,6 +8,7 @@
   <!-- 🎮 Fantasy Leaderboard -->
   <div>
     <h2>🏆 Game Leaderboard for {{ race.race_name }} ({{ race.year }}) 🏆</h2>
+    <h3 style="color: green;">Players in green are faster than the actual GC leader</h3>
     <h3>Riders in red are backup riders</h3>
     <table class="leaderboard-table">
       <thead>
@@ -25,7 +26,9 @@
       </thead>
       <tbody>
         {% for entry in leaderboard_data %}
-          <tr {% if entry.player == request.user %}style="font-weight: bold;"{% endif %}>
+          <tr
+            class="{% if gc_leader_time and entry.total_time_obj and entry.total_time_obj < gc_leader_time %}gc-ahead {% endif %}{% if entry.player == request.user %}current-user{% endif %}"
+          >      
             <td>
               {% if forloop.counter == 1 %}👑{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}{{ forloop.counter }}{% endif %}
             </td>
