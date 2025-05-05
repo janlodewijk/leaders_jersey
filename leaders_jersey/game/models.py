@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from datetime import timedelta, time
 from django.db.models import Q
+from django.utils import timezone
+from datetime import datetime
 
 
 class Race(models.Model):
@@ -17,6 +19,14 @@ class Race(models.Model):
 
     def __str__(self):
         return f"{self.race_name} ({self.year})"
+    
+    @property
+    def has_finished(self):
+        last_stage = self.stages.order_by('-stage_date', '-stage_number').first()
+        if last_stage and last_stage.stage_date and last_stage.start_time:
+            stage_end = timezone.make_aware(datetime.combine(last_stage.stage_date, last_stage.start_time))
+            return timezone.now() > stage_end
+        return False
 
 
 class Stage(models.Model):
@@ -38,7 +48,6 @@ class Stage(models.Model):
     stage_type = models.CharField(max_length=30, choices=STAGE_TYPE_CHOICES, null=True, blank=True)     # mountain, sprint, TT etc.
     start_time = models.TimeField(default=time(12,0))
     is_canceled = models.BooleanField(default=False)
-    has_finished = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('race', 'stage_number')  # prevents duplicate stage numbers per race

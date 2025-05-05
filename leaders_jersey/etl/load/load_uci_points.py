@@ -12,64 +12,80 @@ def calculate_game_gc_standings(race):
     standings = []
 
     for participant in participants:
-        # Fetch all their selections for the race
         selections = PlayerSelection.objects.filter(
             race_participant=participant,
             stage__in=stages
         ).select_related('stage', 'rider__rider')
 
-        # Fetch their backup rider
         backup_selection = PlayerSelection.objects.filter(
             race_participant=participant,
             stage=None
         ).select_related('rider__rider').first()
+
         backup_rider = backup_selection.rider.rider if backup_selection and backup_selection.rider else None
 
         total_gc_time = timedelta(0)
 
         for stage in stages:
-            # Only include finished stages
+            # Only process finished stages
             if not StageResult.objects.filter(stage=stage).exists():
                 continue
 
             result = None
-            # 1. Check if participant selected a rider for this stage
             selection = next((s for s in selections if s.stage_id == stage.id), None)
 
+            # 1. Use selected rider if valid
             if selection and selection.rider:
-                result = StageResult.objects.filter(stage=stage, rider=selection.rider.rider).first()
+                result = StageResult.objects.filter(
+                    stage=stage,
+                    rider=selection.rider.rider,
+                    ranking__isnull=False,
+                    finishing_time__isnull=False
+                ).first()
 
             # 2. Use backup rider if no result yet
             if not result and backup_rider:
-                result = StageResult.objects.filter(stage=stage, rider=backup_rider).first()
+                result = StageResult.objects.filter(
+                    stage=stage,
+                    rider=backup_rider,
+                    ranking__isnull=False,
+                    finishing_time__isnull=False
+                ).first()
 
-            # 3. Fallback: last finisher of the stage
+            # 3. Fallback: last classified finisher
             if not result:
-                result = StageResult.objects.filter(stage=stage).order_by('ranking').last()
+                result = StageResult.objects.filter(
+                    stage=stage,
+                    ranking__isnull=False,
+                    finishing_time__isnull=False
+                ).order_by('-ranking').first()
 
-            # 4. Add the time if we found a result
+            # 4. Add time
             if result and result.finishing_time:
-                # Use full time if fallback, otherwise subtract bonus
+                is_selected_rider = (
+                    selection
+                    and selection.rider
+                    and result.rider == selection.rider.rider
+                )
                 time_to_add = result.finishing_time
-                if result.rider == (selection.rider.rider if selection and selection.rider else None):
+                if is_selected_rider:
                     time_to_add -= result.bonus or timedelta(0)
 
                 total_gc_time += time_to_add
 
-        # Save result per player
         standings.append({
             'participant': participant,
             'user': participant.user,
             'total_gc_time': total_gc_time
         })
 
-    # Sort by GC time
+    # Sort standings by total time
     standings.sort(key=lambda x: x['total_gc_time'])
 
-    # Add GC ranks
+    # Assign GC ranks (with ties)
     for i, row in enumerate(standings):
         if i > 0 and row['total_gc_time'] == standings[i - 1]['total_gc_time']:
-            row['gc_rank'] = standings[i - 1]['gc_rank']  # Same rank for tie
+            row['gc_rank'] = standings[i - 1]['gc_rank']
         else:
             row['gc_rank'] = i + 1
 

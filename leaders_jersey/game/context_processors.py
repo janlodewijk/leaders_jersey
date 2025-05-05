@@ -12,10 +12,10 @@ def race_dropdown_data(request):
 
     for p in participations:
         race = p.race
-        if race.stages.filter(has_finished=False).exists():
-            current_races.append(p)
-        else:
+        if race.has_finished:
             finished_races.append(p)
+        else:
+            current_races.append(p)
 
     available_races = Race.objects.exclude(id__in=joined_race_ids).order_by('start_date')
 
