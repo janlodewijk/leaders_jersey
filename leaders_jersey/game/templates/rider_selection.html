@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% load custom_filters %}
 
+{% load static %}
+
+{% load static custom_filters %}
+
+
 {% block content %}
 <h2>Rider Selection for {{ race.race_name }} ({{ race.year }})</h2>
 
@@ -58,7 +63,12 @@
             <td>{{ item.stage.stage_number|stage_label }}</td>
             <td>{{ item.stage.departure }} - {{ item.stage.arrival }}</td>
             <td>{{ item.stage.distance }} km</td>
-            <td>{{ item.stage.stage_type }}</td>
+            <td>
+                <img src="{% static 'img/stage_types/' %}{{ item.stage.stage_type|stage_icon }}"
+                    alt="{{ item.stage.stage_type }}"
+                    title="{{ item.stage.stage_type }}"
+                    style="width: 32px; vertical-align: middle;" />
+            </td>
             <td>
                 {% if not item.locked %}
                     <span style="white-space: nowrap;">
@@ -119,6 +129,8 @@
 
 {% block extra_scripts %}
 {{ backup_riders|json_script:"riders-data" }}
+{{ countdown_data|json_script:"stage-data" }}
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -322,7 +334,25 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
     
-    
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const now = new Date();
+      const futureDeadlines = JSON.parse(document.getElementById('stage-data').textContent)
+        .map(stage => new Date(stage.deadline_iso))
+        .filter(deadline => deadline > now);
+  
+      if (futureDeadlines.length > 0) {
+        const nextDeadline = Math.min(...futureDeadlines.map(d => d.getTime()));
+        const delay = nextDeadline - now.getTime();
+        if (delay > 0) {
+          setTimeout(() => {
+            window.location.reload();
+          }, delay);
+        }
+      }
+    });
+</script>
+     
     
     
 

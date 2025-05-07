@@ -226,6 +226,16 @@ def rider_selection(request, race_slug, year):
             'riders': sorted(members, key=lambda x: x['start_number'] or 9999)
         })
 
+    # Create a simplified list of countdown info for use in the frontend
+    countdown_data = [
+        {
+            'stage_number': item['stage'].stage_number,
+            'deadline_iso': item['deadline_iso'],
+        }
+        for item in stage_data
+]
+
+
     return render(request, 'rider_selection.html', {
         'stage_data': stage_data,
         'total_gc_time': total_gc_time,
@@ -234,6 +244,7 @@ def rider_selection(request, race_slug, year):
         'backup_riders': backup_riders_data,
         'rider_limit': rider_limit,
         'race': race,
+        'countdown_data': countdown_data,
     })
 
 
