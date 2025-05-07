@@ -60,6 +60,7 @@ class Stage(models.Model):
 class Team(models.Model):
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=5)
+    short_name = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f"{self.code} - {self.name}"

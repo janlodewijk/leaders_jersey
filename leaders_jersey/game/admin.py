@@ -31,7 +31,7 @@ admin.site.register(Profile, ProfileAdmin)
 
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code')
+    list_display = ('name', 'code', 'short_name')
 
 @admin.register(StartlistEntry)
 class StartlistEntryAdmin(admin.ModelAdmin):

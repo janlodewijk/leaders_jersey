@@ -204,7 +204,7 @@ def rider_selection(request, race_slug, year):
             'id': rider.id,
             'start_number': entry.start_number,
             'rider_name': rider.rider_name,
-            'team_name': team.name if team else "Unknown",
+            'team': team.short_name if team and team.short_name else (team.name if team else str(team)),
             'team_code': team.code if team else "UNK",
             'is_dnf': rider.id in dnf_riders,
             'is_backup': is_backup,
@@ -222,7 +222,7 @@ def rider_selection(request, race_slug, year):
 
     for team, members in sorted_teams:
         backup_riders_data.append({
-            'team': team.name if team else str(team),
+            'team': team.short_name if team and team.short_name else (team.name if team else str(team)),
             'riders': sorted(members, key=lambda x: x['start_number'] or 9999)
         })
 

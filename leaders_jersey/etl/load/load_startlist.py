@@ -19,7 +19,7 @@ def load_startlist(transformed_startlist):
                 logger.warning(f"Race not found: {race_slug} ({year}) — skipping group")
                 continue
 
-            # 🧹 Clean up old entries: remove startlist entries not in current file
+            # 🧹 Clean up old entries
             incoming_external_ids = group['external_id'].tolist()
             existing_entries = StartlistEntry.objects.filter(race=race_obj)
             entries_to_delete = existing_entries.exclude(rider__external_id__in=incoming_external_ids)
@@ -30,14 +30,21 @@ def load_startlist(transformed_startlist):
             for index, row in group.iterrows():
                 rider_name = row['rider_name']
                 team_name = row['team']
+                short_team_name = row.get('short_team') or team_name
                 nationality = row['nationality']
                 external_id = row['external_id']
                 start_number = int(row['start_number']) if pd.notna(row['start_number']) else None
 
                 # Get or create team
-                team_obj = None
-                if team_name:
-                    team_obj, _ = Team.objects.get_or_create(name=team_name)
+                team_obj, _ = Team.objects.get_or_create(
+                    name=team_name,
+                    defaults={'short_name': short_team_name}
+                )
+
+                # Update short_name if changed
+                if team_obj.short_name != short_team_name:
+                    team_obj.short_name = short_team_name
+                    team_obj.save()
 
                 # Get or create rider
                 rider_obj, _ = Rider.objects.get_or_create(
