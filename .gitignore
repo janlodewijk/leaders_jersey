@@ -28,3 +28,6 @@ Thumbs.db
 
 #uci points data
 uci_points/
+
+# .env
+.env
