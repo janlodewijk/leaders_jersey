@@ -98,10 +98,10 @@ def rider_selection(request, race_slug, year):
         ranking__isnull=True
     ).values_list('rider_id', flat=True)
 
+    valid_stage_ids = stages.filter(is_canceled=False).values_list('id', flat=True)
     player_selections = PlayerSelection.objects.filter(
         race_participant=participant,
-        stage__in=stages,
-        stage__is_canceled=False
+        stage_id__in=valid_stage_ids
     ).select_related('stage', 'rider')
 
     selection_lookup = {sel.stage_id: sel for sel in player_selections}
@@ -143,12 +143,11 @@ def rider_selection(request, race_slug, year):
             ).first()
 
         if not result and backup_selection and backup_selection.rider:
-            result = StageResult.objects.filter(
-                stage=stage,
-                rider=backup_selection.rider.rider,
-                ranking__isnull=False,
-                finishing_time__isnull=False
-            ).first()
+            result = StageResult.objects.filter(stage=stage,
+                                                rider=backup_selection.rider.rider,
+                                                ranking__isnull=False,
+                                                finishing_time__isnull=False
+                                                ).first()
             used_backup = result is not None
 
         if not result:
@@ -186,6 +185,7 @@ def rider_selection(request, race_slug, year):
 
         selection_count = rider_usage.get(rider.id, 0)
         is_backup = backup_selection and backup_selection.rider and rider.id == backup_selection.rider.rider.id
+
         is_unavailable = (
             is_backup
             or selection_count >= rider_limit
@@ -207,23 +207,15 @@ def rider_selection(request, race_slug, year):
     backup_riders_data = []
     sorted_teams = sorted(
         team_riders.items(),
-        key=lambda item: min([
-            r['start_number'] for r in item[1] if r['start_number'] is not None
-        ] or [9999])
+        key=lambda item: min(
+            [r['start_number'] for r in item[1] if r['start_number'] is not None] or [9999]
+        )
     )
 
     for team, members in sorted_teams:
-        cleaned_riders = []
-        for r in members:
-            is_unavailable = (
-                r['id'] in selected_stage_rider_ids or r['is_dnf']
-            )
-            r['is_unavailable'] = is_unavailable
-            cleaned_riders.append(r)
-
         backup_riders_data.append({
             'team': team.short_name if team and team.short_name else (team.name if team else str(team)),
-            'riders': sorted(cleaned_riders, key=lambda x: x['start_number'] or 9999)
+            'riders': sorted(members, key=lambda x: x['start_number'] or 9999)
         })
 
     countdown_data = [
