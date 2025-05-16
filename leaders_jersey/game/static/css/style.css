@@ -248,7 +248,7 @@ select,
 }
 
 .rider-button.disabled {
-    background-color: black;
+    background-color: grey;
     color: #FFD700;
     cursor: not-allowed;
 }
