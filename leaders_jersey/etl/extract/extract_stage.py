@@ -72,6 +72,7 @@ def extract_stage_results(race, year, stage_number):
         parsed_results = stage_results_raw.parse()
         
         logger.info(f"Successfully extracted results for {race} ({year}) - stage {stage_number if stage_number > 0 else 'prologue'}")
+        print(parsed_results)
         return parsed_results
 
     except Exception as e:
