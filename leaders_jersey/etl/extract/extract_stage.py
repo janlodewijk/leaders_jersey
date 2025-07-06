@@ -33,11 +33,14 @@ def extract_stage_info(race, year):
             url = f"https://www.procyclingstats.com/race/{race}/{year}/stage-{stage_number}"
             stage_info_raw = Stage(url)
 
-            date = stage_info_raw.date()
-            departure = stage_info_raw.departure()
-            arrival = stage_info_raw.arrival()
-            distance = stage_info_raw.distance()
-
+            try:
+                date = stage_info_raw.date()
+                departure = stage_info_raw.departure()
+                arrival = stage_info_raw.arrival()
+                distance = stage_info_raw.distance()
+            except Exception as e:
+                logger.warning(f"Failed to parse stage {stage_number} ({url}): {e}")
+                break
         
             stage_info = {
                 'race': race,
