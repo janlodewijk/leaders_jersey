@@ -15,14 +15,12 @@ def transform_stage_info(raw_stage_info):
 
 
 def safe_parse_timedelta(value, default="0:00:00"):
-    """Parses a time string safely, correcting malformed formats like 0:00:-20 or 0:*0:39."""
+    """Parses a time string safely, correcting malformed negatives like 0:00:-20 to -0:00:20."""
     try:
-        if not value or '*' in value or '-' in value and value.count('-') > 1:
-            raise ValueError("Invalid or malformed time string")
+        if not value:
+            return pd.to_timedelta(default)
 
         parts = value.strip().split(':')
-
-        # Fix negative seconds like 0:00:-20 → -0:00:20
         if len(parts) == 3 and parts[2].startswith('-'):
             parts[2] = parts[2].lstrip('-')
             value = '-' + ':'.join(parts)
@@ -31,8 +29,6 @@ def safe_parse_timedelta(value, default="0:00:00"):
     except Exception as e:
         logger.warning(f"Could not parse time value '{value}': {e}")
         return pd.to_timedelta(default)
-
-
 
 
 def transform_stage_results(raw_stage_info, race, year, stage_number):

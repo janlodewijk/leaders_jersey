@@ -1,6 +1,5 @@
 from procyclingstats import Stage
 from etl.logging_config import logger
-import pandas as pd
 
 
 def extract_stage_info(race, year):
@@ -65,9 +64,6 @@ def extract_stage_info(race, year):
     return stages_info
             
 
-from procyclingstats import Stage
-from etl.logging_config import logger
-
 def extract_stage_results(race, year, stage_number):
     try:
         if stage_number == 0:
@@ -75,37 +71,13 @@ def extract_stage_results(race, year, stage_number):
         else:
             url = f"https://www.procyclingstats.com/race/{race}/{year}/stage-{stage_number}"
 
-        stage = Stage(url)
-        raw_data = stage._raw_results  # This avoids .parse(), which is too strict
-
-        if not isinstance(raw_data, dict):
-            logger.error(f"Unexpected result format for {race} {year} stage {stage_number}")
-            return None
-
-        cleaned_data = {}
-
-        for key in ['results', 'gc']:
-            entries = raw_data.get(key, [])
-            cleaned_entries = []
-
-            for rider in entries:
-                valid = True
-
-                for time_field in ['time', 'bonus']:
-                    if time_field in rider and isinstance(rider[time_field], str):
-                        if '*' in rider[time_field] or any(c.isalpha() for c in rider[time_field]):
-                            logger.warning(f"⛔ Skipping rider due to bad {time_field}: {rider.get('rider_name')} — value: {rider[time_field]}")
-                            valid = False
-                            break
-
-                if valid:
-                    cleaned_entries.append(rider)
-
-            cleaned_data[key] = cleaned_entries
-
-        logger.info(f"✅ Extracted cleaned results for {race} ({year}) - stage {stage_number}")
-        return cleaned_data
+        stage_results_raw = Stage(url)
+        parsed_results = stage_results_raw.parse()
+        
+        logger.info(f"Successfully extracted results for {race} ({year}) - stage {stage_number if stage_number > 0 else 'prologue'}")
+        print(parsed_results)
+        return parsed_results
 
     except Exception as e:
-        logger.error(f"❌ Failed to extract results for {race} {year} stage {stage_number}: {e}")
+        logger.error(f"Stage {stage_number if stage_number > 0 else 'prologue'} not finished / no results yet. Error: {e}")
         return None
