@@ -1,6 +1,5 @@
 import pandas as pd
 from etl.logging_config import logger
-from datetime import timedelta
 
 
 def transform_stage_info(raw_stage_info):
@@ -14,23 +13,6 @@ def transform_stage_info(raw_stage_info):
         logger.error(f"Failed to transform stage info: {e}") 
 
 
-def safe_parse_timedelta(value, default="0:00:00"):
-    """Parses a time string safely, correcting malformed negatives like 0:00:-20 to -0:00:20."""
-    try:
-        if not value:
-            return pd.to_timedelta(default)
-
-        parts = value.strip().split(':')
-        if len(parts) == 3 and parts[2].startswith('-'):
-            parts[2] = parts[2].lstrip('-')
-            value = '-' + ':'.join(parts)
-
-        return pd.to_timedelta(value)
-    except Exception as e:
-        logger.warning(f"Could not parse time value '{value}': {e}")
-        return pd.to_timedelta(default)
-
-
 def transform_stage_results(raw_stage_info, race, year, stage_number):
     try:
         stage_data = {}
@@ -42,32 +24,29 @@ def transform_stage_results(raw_stage_info, race, year, stage_number):
             external_id = rider.get('rider_url', 'Unknown')
             if not external_id:
                 continue
-
             stage_data[external_id] = {
                 'external_id': external_id,
-                'finishing_time': safe_parse_timedelta(rider.get('time')),
+                'finishing_time': pd.to_timedelta(rider.get('time', '0:00:00')),
                 'ranking': rider.get('rank', 'Unknown'),
-                'bonus': safe_parse_timedelta(rider.get('bonus')),
+                'bonus': pd.to_timedelta(rider.get('bonus', '0:00:00')),
             }
-
+        
         # Add GC data
         for rider in raw_stage_info.get('gc', []):
             external_id = rider.get('rider_url')
             if not external_id:
                 continue
-
             if external_id not in stage_data:
-                stage_data[external_id] = {
+                stage_data[external_id] ={
                     'external_id': external_id,
                     'finishing_time': None,
                     'ranking': None,
                     'bonus': pd.to_timedelta('0:00:00'),
                 }
-
-            stage_data[external_id]['gc_time'] = safe_parse_timedelta(rider.get('time'))
+            
+            stage_data[external_id]['gc_time'] = pd.to_timedelta(rider.get('time', '0:00:00'))
             stage_data[external_id]['gc_rank'] = rider.get('rank')
 
-        # Final structure
         stage_results = []
         for rider in stage_data.values():
             rider.update({
@@ -76,7 +55,7 @@ def transform_stage_results(raw_stage_info, race, year, stage_number):
                 'stage_number': stage_number
             })
             stage_results.append(rider)
-
+        
         stage_results_df = pd.DataFrame(stage_results)
 
         # Convert ranking and gc_rank columns to nullable integers
@@ -85,7 +64,7 @@ def transform_stage_results(raw_stage_info, race, year, stage_number):
 
         logger.info(f"Stage results transformed successfully")
         return stage_results_df
-
+    
     except Exception as e:
         logger.error(f"Failed to transform stage results: {e}")
-        return None
+
