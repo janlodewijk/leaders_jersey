@@ -1,6 +1,6 @@
 from procyclingstats import Stage
 
-url = "https://www.procyclingstats.com/race/tour-de-france/2025/stage-1"
+url = "https://www.procyclingstats.com/race/vuelta-a-espana/2025/stage-4"
 stage = Stage(url)
 
 print("Date:", stage.date())
